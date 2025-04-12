@@ -94,25 +94,58 @@ class CPU {
         }
     }
 
-    //Increment the stack pointer by 1
-    inc_sp() {
-        this.sp++;
+    // Increment the stack pointer by a number of bytes
+    inc_pc(bytes) {
+        this.pc += bytes;
     }
+
+    // Grab the byte of data immediately following the program counter
+    imm8() {
+        return this.mem.readByte(this.getr('pc')+1);
+    }
+
+    // Grab the two bytes of data immediately following the program counter (they are little-endian in memory)
+    imm16() {
+        return this.mem.readByte(this.getr('pc')+2) << 8 | this.mem.readByte(this.getr('pc')+1) ;
+    }
+
 
     // CPU INSTRUCTIONS
     // All instructions return the duration in machine cycles
 
-    // Load the value of reg2 into reg1
-    ld_r8_r8(reg1, reg2) {
-        this.setr(reg1, this.getr(reg2));
-        this.inc_sp();
+    // LOAD INSTRUCTIONS
+    // Load TO r8_1 FROM r8_2
+    ld_r8_r8(r8_1, r8_2) {
+        this.setr(r8_1, this.getr(r8_2));
+        this.inc_pc(1);
         return 1;
     }
 
-    // Load the immediate data n into register reg
-    ld_r8_n(reg) {
-        this.setr(reg, this.mem.readByte(this.getr('pc')+1));
-        this.inc_sp();
+    // Load TO r8 FROM immediate data
+    ld_r8_n8(r8) {
+        this.setr(r8, this.imm8());
+        this.inc_pc(2);
         return 2;
+    }
+
+    // Load TO r8_1 FROM data at absolute address specified by r16
+    ld_r8_r16ptr(r8, r16ptr) {
+        this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO data at absolute address specified by r16 FROM r8
+    ld_r16ptr_r8(r16ptr, r8) {
+        this.mem.writeByte(this.getr(r16ptr), this.getr(r8));
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO data at absolute address specified by r16ptr FROM immediate data 
+    ld_r16ptr_n8() {
+        this.mem.writeByte(this.getr(r16ptr), this.imm8());
+        this.inc_pc(2);
+        return 3;
     }
 }
