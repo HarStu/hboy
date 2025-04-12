@@ -1,0 +1,4 @@
+- [ ] Confirm that createWord is actually outputting the proper little-endian format
+- [ ] Doublecheck we're not missing any breaks in the nested switch statements 
+- [ ] Generally clean up formatting, esp numbers that come from data
+    - [ ] Probably should just revise this to "get8BitVal" and "get16BitVal"
