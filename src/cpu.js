@@ -113,7 +113,9 @@ class CPU {
     // CPU INSTRUCTIONS
     // All instructions return the duration in machine cycles
 
-    // LOAD INSTRUCTIONS
+    // -----------------------
+    // 8-BIT LOAD INSTRUCTIONS
+    // -----------------------
     // Load TO r8_1 FROM r8_2
     ld_r8_r8(r8_1, r8_2) {
         this.setr(r8_1, this.getr(r8_2));
@@ -121,14 +123,14 @@ class CPU {
         return 1;
     }
 
-    // Load TO r8 FROM immediate data
-    ld_r8_n8(r8) {
+    // Load TO r8 FROM immediate byte
+    ld_r8_imm8(r8) {
         this.setr(r8, this.imm8());
         this.inc_pc(2);
         return 2;
     }
 
-    // Load TO r8_1 FROM data at absolute address specified by r16
+    // Load TO r8 FROM data at absolute address specified by r16
     ld_r8_r16ptr(r8, r16ptr) {
         this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
         this.inc_pc(1);
@@ -142,10 +144,101 @@ class CPU {
         return 2;
     }
 
-    // Load TO data at absolute address specified by r16ptr FROM immediate data 
-    ld_r16ptr_n8() {
+    // Load TO data at absolute address specified by r16ptr FROM immediate byte
+    ld_r16ptr_imm8(r16ptr) {
         this.mem.writeByte(this.getr(r16ptr), this.imm8());
         this.inc_pc(2);
         return 3;
     }
+
+    // Load TO r8 FROM data at absolute address specified by immediate two bytes
+    ld_r8_imm16ptr(r8) {
+        this.setr(r8, this.mem.readByte(this.imm16()));
+        this.inc_pc(3);
+        return 4;
+    }
+
+    // Load TO data at absolute address specified by immediate two bytes FROM r8
+    ld_imm16ptr_r8(r8) {
+        this.mem.writeByte(this.imm16(), this.getr(r8));
+        this.inc_pc(3);
+        return 4;
+    }
+
+    // Load TO a FROM data at absolute address specified by register C + 0xFF00
+    ld_a_cffptr() {
+        this.setr('a', this.mem.readByte(this.getr('c') + 0xFF00));
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO data at absolute address specified by register C + 0xFF00 FROM a
+    ld_cffptr_a() {
+        this.mem.writeByte(this.getr('c') + 0xFF00, this.getr('a'));
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO a FROM data at absolute address specified by immediate byte + 0xFF00
+    ld_a_imm8ffptr() {
+        this.setr('a', this.mem.readByte(this.imm8() + 0xFF00));
+        this.inc_pc(2);
+        return 3;
+    }
+
+    // Load TO data at absolute address specified by immediate byte + 0xFF00 FROM a
+    ld_imm8ffptr_a() {
+        this.mem.writeByte(this.imm8() + 0xFF00, this.getr('a'));
+        this.inc_pc(2);
+        return 3;
+    }
+
+    // Load TO a FROM data at absolute address specified by hl
+    // Decrement hl
+    ld_a_hl_dec() {
+        // current hl as of the time execution of this operation begins
+        const cur_hl = this.getr('hl');
+        this.setr('a', this.mem.readByte(cur_hl));
+        // decrement hl with 16-bit wrap-around using bitwise and
+        this.setr('hl', (cur_hl - 1) & 0xFFFF);
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO data at absolute address specified by hl FROM a
+    // Decrement hl
+    ld_hl_a_dec() {
+        // current hl as of the time execution of this operation begins
+        const cur_hl = this.getr('hl');
+        this.mem.writeByte(cur_hl, this.getr('a'));
+        // decrement hl with 16-bit wrap-around using bitwise and
+        this.setr('hl', (cur_hl - 1) & 0xFFFF);
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO a FROM data at absolute address specified by hl
+    // Increment hl
+    ld_a_hl_inc() {
+        // current hl as of the time execution of this operation begins
+        const cur_hl = this.getr('hl');
+        this.setr('a', this.mem.readByte(cur_hl));
+        // increment hl with 16-bit wrap-around using bitwise and
+        this.setr('hl', (cur_hl + 1) & 0xFFFF);
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Load TO data at absolute address specified by hl FROM a
+    // Increment hl
+    ld_hl_a_inc() {
+        // current hl as of the time execution of this operation begins
+        const cur_hl = this.getr('hl');
+        this.mem.writeByte(cur_hl, this.getr('a'));
+        // increment hl with 16-bit wrap-around using bitwise and
+        this.setr('hl', (cur_hl + 1) & 0xFFFF);
+        this.inc_pc(1);
+        return 2;
+    }
+
 }
