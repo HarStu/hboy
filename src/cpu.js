@@ -164,28 +164,28 @@ class CPU {
     }
 
     // Load TO a FROM data at absolute address specified by register C + 0xFF00
-    ld_a_cffptr() {
+    ld_a_ffcptr() {
         this.setr('a', this.mem.readByte(this.getr('c') + 0xFF00));
         this.inc_pc(1);
         return 2;
     }
 
     // Load TO data at absolute address specified by register C + 0xFF00 FROM a
-    ld_cffptr_a() {
+    ld_ffcptr_a() {
         this.mem.writeByte(this.getr('c') + 0xFF00, this.getr('a'));
         this.inc_pc(1);
         return 2;
     }
 
     // Load TO a FROM data at absolute address specified by immediate byte + 0xFF00
-    ld_a_imm8ffptr() {
+    ld_a_ffimm8ptr() {
         this.setr('a', this.mem.readByte(this.imm8() + 0xFF00));
         this.inc_pc(2);
         return 3;
     }
 
     // Load TO data at absolute address specified by immediate byte + 0xFF00 FROM a
-    ld_imm8ffptr_a() {
+    ld_ffimm8ptr_a() {
         this.mem.writeByte(this.imm8() + 0xFF00, this.getr('a'));
         this.inc_pc(2);
         return 3;
