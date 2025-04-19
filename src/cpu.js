@@ -2,10 +2,8 @@
  * Models the state and behavior of the Gameboy's CPU
  */
 
-import Mem from './mem.js';
-
 class CPU {
-    constructor() {
+    constructor(mem) {
         // Initalize 8-bit registers
         this.r = {
             'a': 0x00,
@@ -35,7 +33,7 @@ class CPU {
         }
 
         // The memory associated with the CPU
-        this.mem = new Mem();
+        this.mem = mem;
     }
 
     // Set the value of register 'reg' to 'val'
