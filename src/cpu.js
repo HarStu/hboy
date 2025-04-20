@@ -92,6 +92,48 @@ class CPU {
         }
     }
 
+
+    // Set specific flag
+    setf(flag, val) {
+        // check that paramters are valid and update appropriate flag
+        if (['z', 'n', 'h', 'c'].includes(flag) && typeof val === "boolean") {
+            if (flag == 'z') {
+                this.flags.z = val;
+            } else if (flag == 'n') {
+                this.flags.n = val;
+            } else if (flag == 'h') {
+                this.flags.h = val;
+            } else if (flag == 'c') {
+                this.flags.c = val;
+            }
+        } else {
+            console.log(`Error in CPU.setf: invalid parameter(s): flag ${flag}, val ${val}`);
+            return null;
+        }
+        // update value of f register based on flag in question
+        // z = bit 7
+        // n = bit 6
+        // h = bit 5
+        // c = bit 4
+        // bits 0-3 are always set to 0
+        let newf = 0b00000000;
+        if (this.flags.z) {
+            newf = newf | 0b10000000;
+        }
+        if (this.flags.n) {
+            newf = newf | 0b01000000;
+        }
+        if (this.flags.h) {
+            newf = newf | 0b00100000;
+        }
+        if (this.flags.c) {
+            newf = newf | 0b00010000;
+        }
+        this.r.f = newf
+
+        return newf
+    }
+
     // Increment the stack pointer by a number of bytes
     inc_pc(bytes) {
         this.pc += bytes;
@@ -107,8 +149,105 @@ class CPU {
         return this.mem.readByte(this.getr('pc')+2) << 8 | this.mem.readByte(this.getr('pc')+1) ;
     }
 
+    // Add (or subtract) 8-bit values against each other
+    add8(a, b, sub=false) {
+        let raw_result = 0;
+        if (sub) {
+            raw_result = a - b;
+        } else {
+            raw_result = a + b;
+        }
+        let trim_result = raw_result & 0xFF;
 
+        // manage carry flag
+        if (raw_result > 0xFF || (sub && a < b)) {
+            this.setf('c', true);
+        } else {
+            this.setf('c', false);
+        }
+
+        // manage half carry flag
+        if (sub) {
+            if ((b & 0xF) > (a & 0xF)) {
+                this.setf('h', true);
+            } else {
+                this.setf('h', false)
+            }
+        } else {
+            if ((a & 0xF) + (b & 0xF) > 0xF) {
+                this.setf('h', true);
+            } else {
+                this.setf('h', false);
+            }
+        }
+
+        // manage zero flag
+        if (trim_result == 0) {
+            this.setf('z', true);
+        } else {
+            this.setf('z', false);
+        }
+
+        // manage subtraction flag
+        if (sub) {
+            this.setf('n', true);
+        } else {
+            this.setf('n', false);
+        }
+
+        return trim_result;
+    }
+
+    // Add a signed 8-bit value to a 16-bit value
+    add16_signed8(a16, b8) {
+        // here, b8 is interpreted as SIGNED
+        // adding an 8-bit value to a 16-bit value doesn't naturally wrap
+        // after clamping the way adding two values of the same size do
+        // consider how 0xFF could be +255 (unsigned) or -1 (signed)
+        // if we add it to 0x0002 (16-bit 2):
+        //   0x0002 + 255 = 0x0101 -> clamp w/ & 0xFFFF = 0x0101
+        //   0x0002 -   1 = 0x0001 -> clamp w/ & 0xFFFF = 0x0001
+        // These don't match!
+        // now consider this case, where we add it to 0x02 (8-bit 2):
+        //   0x02 + 255 = 0x101    -> clamp w/ & 0xFF = 0x01
+        //   0x02 -   1 = 0x01     -> clamp w/ & 0xFF = 0x01
+        // When adding an 8-bit number to a 16-bit number, the overflow occurs
+        // at bit 15, not bit 7. This means we need to manually account for 
+        // if we're interpreting the value as signed or unsigned in a way that
+        // is automatically handled by our clamping when adding 8-bit to 8-bit
+        if (b8 > 127) {
+            b8_signed = b8 - 256;
+        } else {
+            b8_signed = b8;
+        }
+        let raw_result = a16 + b8_signed;
+        let trim_result = raw_result & 0xFFFF;
+
+        //however, all the flag logic still considers b8 as unsigned
+        // manage carry flag based on low byte addition
+        if (((a16 & 0xFF) + b8) > 0xFF) {
+            this.setf('c', true);
+        } else {
+            this.setf('c', false);
+        }
+
+        // manage half carry flag
+        if ((a16 & 0xF) + (b8 & 0xF) > 0xF) {
+            this.setf('h', true);
+        } else {
+            this.setf('h', false);
+        }
+
+        // Always clear the z and n flags
+        this.setf('z', false);
+        this.setf('n', false);
+
+        return trim_result;
+    }
+
+    // ----------------
     // CPU INSTRUCTIONS
+    // ----------------
     // All instructions return the duration in machine cycles
 
     // -----------------------
@@ -237,6 +376,81 @@ class CPU {
         this.setr('hl', (cur_hl + 1) & 0xFFFF);
         this.inc_pc(1);
         return 2;
+    }
+
+    // -----------------------
+    // 16-BIT LOAD INSTUCTIONS
+    // -----------------------
+    // Load TO r16 FROM immediate two bytes
+    ld_r16_imm16(r16) {
+        this.setr(r16, this.imm16());
+        this.inc_pc(3);
+        return 3;
+    }
+
+    // Load TO the data at absolute address specified by immediate two bytes FROM sp
+    ld_imm16ptr_sp() {
+        this.mem.writeByte(this.imm16(), this.getr('sp'));
+        this.inc_pc(3);
+        return 5;
+    }
+
+    // Load TO sp FROM hl
+    ld_sp_hl() {
+        this.setr('sp', this.getr('hl'));
+        this.inc_pc(1);
+        return 2;
+    }
+
+    // Push TO stack memory FROM r16
+    push_r16(r16) {
+        // current sp as of the time execution of this operation begins
+        const cur_sp = this.getr('sp');
+        // words in memory are stored little-endian; the least significant byte is first
+        // registers are big-endian; the most significant byte is first
+        // grab the msb and lsb from r16
+        const r16_msb = (this.getr(r16) & 0xFF00) >> 8;
+        const r16_lsb = (this.getr(r16)) & 0xFF
+
+        // write the msb first (at a higher position in memory)
+        this.mem.writeByte((cur_sp - 1) & 0xFFFF, r16_msb);
+        // write the lsb second (at a lower position in memory)
+        // being at a lower position, it comes 'first' in memory -- little-endian
+        this.mem.writeByte((cur_sp - 2) & 0xFFFF, r16_lsb);
+
+        // set the sp to its new value
+        this.setr('sp', (cur_sp - 2) & 0xFFFF);
+        this.inc_pc(1);
+        return 4;
+    }
+
+    // Pop TO r16 FROM stack memory
+    pop_r16(r16) {
+        // current sp as of the time execution of this operation begins
+        const cur_sp = this.getr('sp');
+
+        // words in memory are stored little-endian; the least significant byte is first
+        // registers are big-endian; the most significant byte is first
+        // since r16 is denoted by a string, we can index is to grab its constituent 8-bit registers
+        // then set them accordingly (lsb from earlier in memory, msb from later in memory)
+        this.setr(r16[0], this.mem.readByte((cur_sp + 1) & 0xFFFF)); // set msb
+        this.setr(r16[1], this.mem.readByte(cur_sp)); // set lsb
+
+        //set the sp to its new value
+        this.setr('sp', (cur_sp + 2) & 0xFFFF);
+
+        // while 'pop af' completely re-writes the f register, flag updates are handled in setr
+        this.inc_pc(1);
+        return 3;
+    }
+
+    // Load TO hl FROM adjusted sp
+    ld_hl_sp_plus_e() {
+        // 'adjusted sp' refers to sp plus signed imm8
+        let adj_sp =  this.add16_signed8(this.getr('sp'), this.imm8());
+        this.setr('hl', adj_sp);
+        this.inc_pc(2);
+        return 3;
     }
 
 }
