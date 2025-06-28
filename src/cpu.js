@@ -19,8 +19,8 @@ class CPU {
         this.sp = 0x00;
         this.pc = 0x00;
 
-        // Flags, contained within the lower eight bits of the AF register
-        // In essense, the 'F' register is where these are stored
+        // Flags, contained within the lower eight bits of the af register
+        // In essense, the 'f' register is where these are stored
         this.flags = {
             // Bit 7 -- Zero Flag
             'z': false,
