@@ -2,16 +2,25 @@
  * Models the GameBoy as a whole from its constituent parts
  */
 
-import Mem from './mem.js';
-import CPU from './cpu.js';
+import { Mem } from './mem.js';
+// TODO: Convert CPU to TypeScript and import properly
+// import { CPU } from './cpu.js';
 
-class GB {
+export class GB {
   private mem: Mem;
-  private cpu: CPU;
+  // private cpu: CPU; // TODO: Uncomment when CPU is converted to TypeScript
 
-  constructor() {
-    // TODO -- load ROM
-    this.mem = new Mem(ROM);
-    this.cpu = new CPU(this.mem);
+  constructor(rom?: Uint8Array) {
+    this.mem = new Mem(rom);
+    // this.cpu = new CPU(this.mem); // TODO: Uncomment when CPU is converted to TypeScript
+  }
+
+  // TODO: Add methods to run the emulator
+  public run(): void {
+    console.log('GameBoy emulator running...');
+  }
+
+  public getMem(): Mem {
+    return this.mem;
   }
 }
