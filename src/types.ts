@@ -18,6 +18,3 @@ export type Reg8 = 'a' | 'b' | 'c' | 'd' | 'e' | 'h' | 'l' | 'f';
 
 /** 16-bit register (bc, de, hl, af, sp, pc) */
 export type Reg16 = 'bc' | 'de' | 'hl' | 'af' | 'sp' | 'pc';
-
-/** Opcode value (0-255) */
-export type Opcode = UInt8;

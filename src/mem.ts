@@ -1,6 +1,9 @@
 /**
  * Models the GameBoy's Memory Map
  */
+
+import { Address, UInt8, UInt16 } from './types';
+
 class Mem {
   private romBanks: Uint8Array[]; // ROM banks (Bank 0 fixed, others switchable)
 
@@ -37,7 +40,7 @@ class Mem {
     // TODO -- POPULATE BANK ARRAYS WITH APPROPRIATE MEMORY BASED ON CARTRIDGE MBC
   }
 
-  readbyte(addr) {
+  readbyte(addr): UInt8 {
     if (addr >= 0x0000 && addr < 0x4000) {
       // Return from first fixed ROM bank
       return this.romBanks[0][addr];
@@ -84,7 +87,7 @@ class Mem {
     }
   }
 
-  writebyte(addr, val) {
+  writebyte(addr: Address, val: UInt8): void {
     if (val < 0x00 || val > 0xFF) {
       console.log(`ERROR in Mem.writebyte: Attempt to write non-byte val ${val}`)
     } else if (addr >= 0x0000 && addr < 0x4000) {
