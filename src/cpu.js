@@ -149,25 +149,26 @@ class CPU {
     return this.mem.readByte(this.getr('pc') + 2) << 8 | this.mem.readByte(this.getr('pc') + 1);
   }
 
-  // Helper function to make arith8 call more immediately readable without repeating code
-  add8(a, b, addc = false) {
-    return this.arith8(a, b, false, addc)
+  // Helper function to make addition arith8 call more immediately readable without repeating code
+  add8(a, b, c_in = false) {
+    return this.arith8(a, b, false, c_in)
   }
 
-  // Helper function to make arith8 call more immediately readable without repeating code
-  sub8(a, b, addc = false) {
-    return this.arith8(a, b, true, addc)
+  // Helper function to make subtraction arith8 call more immediately readable without repeating code
+  sub8(a, b, c_in = false) {
+    return this.arith8(a, b, true, c_in)
   }
 
   // Add (or subtract) 8-bit values against each other
-  arith8(a, b, sub = false, addc = false) {
+  arith8(a, b, sub = false, c_in = false) {
     let raw_result = 0;
     let c = this.flags.c ? 1 : 0;
     if (sub) {
       raw_result = a - b;
+      c_in ? raw_result - c : raw_result
     } else {
-      raw_result = a + b;
-      addc && (raw_result += c);
+      raw_result = a + b + c;
+      c_in ? raw_result + c : raw_result
     }
     let trim_result = raw_result & 0xFF;
 
@@ -465,7 +466,7 @@ class CPU {
   // -----------------------------
   // 8-BIT ARITHMETIC INSTRUCTIONS
   // -----------------------------
-  // Add TO a FROM r8
+  // Load TO a FROM a + r8
   add_a_r8(r8) {
     const res = this.add8(this.getr('a'), this.getr(r8))
     this.setr('a', res);
@@ -473,7 +474,7 @@ class CPU {
     return 1;
   }
 
-  // Add TO a FROM data at absolute address specified by hl
+  // Load TO a FROM a + data at absolute address specified by hl 
   add_a_hlptr() {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     this.setr('a', res);
@@ -481,7 +482,7 @@ class CPU {
     return 2;
   }
 
-  // Add TO a FROM immediate byte
+  // Load TO a FROM a + immediate byte
   add_a_imm8() {
     const res = this.add8(this.getr('a'), this.imm8());
     this.setr('a', res);
@@ -489,7 +490,7 @@ class CPU {
     return 2;
   }
 
-  // Add TO a FROM r8 + carry flag 
+  // Load TO a FROM a + r8 + carry flag 
   adc_a_r8(r8) {
     const res = this.add8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
@@ -497,7 +498,7 @@ class CPU {
     return 1
   }
 
-  // Add TO a FROM data at absolute address specific by hl + carry flag
+  // Load TO a FROM a + data at absolute address specific by hl + carry flag
   adc_a_hl() {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
@@ -505,7 +506,7 @@ class CPU {
     return 2;
   }
 
-  // Add TO a FROM immediate byte + carry flag
+  // Load TO a FROM a + immediate byte + carry flag
   adc_a_imm8() {
     const res = this.add8(this.getr('a'), imm8(), true);
     this.setr('a', res);
@@ -513,6 +514,51 @@ class CPU {
     return 2;
   }
 
-  // 
+  // Load TO a FROM a - r8
+  sub_a_r8(r8) {
+    const res = this.sub8(this.getr('a'), this.getr(r8));
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 1;
+  }
 
+  // Load TO a FROM a - data at absolute address specified by hl 
+  sub_a_hlptr() {
+    const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 2;
+  }
+
+  // Load TO a FROM a - immediate byte
+  sub_a_imm8() {
+    const res = this.sub8(this.getr('a'), this.imm8());
+    this.setr('a', res);
+    this.inc_pc(2);
+    return 2;
+  }
+
+  // Load TO a FROM a - r8 - carry flag
+  sbc_a_r8(r8) {
+    const res = this.sub8(this.getr('a'), this.getr(r8), true);
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 1;
+  }
+
+  // Load TO a FROM a - data at absolute address specified by hl - carry flag
+  sbc_a_hlptr() {
+    const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 2;
+  }
+
+  // Load TO a FROM a - immediate byte - carry flag
+  sbc_a_imm8() {
+    const res = this.sub8(this.getr('a'), this.imm8(), true);
+    this.setr('a', res);
+    this.inc_pc(2);
+    return 2;
+  }
 }
