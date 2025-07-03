@@ -149,8 +149,18 @@ class CPU {
     return this.mem.readByte(this.getr('pc') + 2) << 8 | this.mem.readByte(this.getr('pc') + 1);
   }
 
+  // Helper function to make arith8 call more immediately readable without repeating code
+  add8(a, b, addc = false) {
+    return this.arith8(a, b, false, addc)
+  }
+
+  // Helper function to make arith8 call more immediately readable without repeating code
+  sub8(a, b, addc = false) {
+    return this.arith8(a, b, true, addc)
+  }
+
   // Add (or subtract) 8-bit values against each other
-  add8(a, b, sub = false, addc = false) {
+  arith8(a, b, sub = false, addc = false) {
     let raw_result = 0;
     let c = this.flags.c ? 1 : 0;
     if (sub) {
@@ -481,10 +491,28 @@ class CPU {
 
   // Add TO a FROM r8 + carry flag 
   adc_a_r8(r8) {
-    const res = this.add8(this.getr('a'), this.getr(r8), false, true);
+    const res = this.add8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
     this.inc_pc(1);
     return 1
   }
+
+  // Add TO a FROM data at absolute address specific by hl + carry flag
+  adc_a_hl() {
+    const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 2;
+  }
+
+  // Add TO a FROM immediate byte + carry flag
+  adc_a_imm8() {
+    const res = this.add8(this.getr('a'), imm8(), true);
+    this.setr('a', res);
+    this.inc_pc(2);
+    return 2;
+  }
+
+  // 
 
 }
