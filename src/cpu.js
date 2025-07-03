@@ -150,17 +150,17 @@ class CPU {
   }
 
   // Helper function to make addition arith8 call more immediately readable without repeating code
-  add8(a, b, c_in = false) {
-    return this.arith8(a, b, false, c_in)
+  add8(a, b, c_in = false, up_c = true) {
+    return this.arith8(a, b, false, c_in, up_c)
   }
 
   // Helper function to make subtraction arith8 call more immediately readable without repeating code
-  sub8(a, b, c_in = false) {
-    return this.arith8(a, b, true, c_in)
+  sub8(a, b, c_in = false, up_c = true) {
+    return this.arith8(a, b, true, c_in, up_c)
   }
 
   // Add (or subtract) 8-bit values against each other
-  arith8(a, b, sub = false, c_in = false) {
+  arith8(a, b, sub = false, c_in = false, up_c = true) {
     let raw_result = 0;
     let c = this.flags.c ? 1 : 0;
     if (sub) {
@@ -173,7 +173,7 @@ class CPU {
     let trim_result = raw_result & 0xFF;
 
     // manage carry flag
-    if (raw_result > 0xFF || (sub && a < b)) {
+    if ((raw_result > 0xFF || (sub && a < b)) && up_c) {
       this.setf('c', true);
     } else {
       this.setf('c', false);
@@ -570,7 +570,7 @@ class CPU {
     return 1;
   }
 
-  // Compare a WITH data at absolute address specific by hl
+  // Compare a WITH data at absolute address specified by hl
   // updates flags like sub_a_hlptr, but discards the result
   cp_a_hlptr() {
     this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
@@ -584,6 +584,38 @@ class CPU {
     this.sub8(this.getr('a'), this.imm8());
     this.inc_pc(2);
     return 2;
+  }
+
+  // Increment r8
+  inc_r8(r8) {
+    const res = this.add8(this.getr(r8), 1, false, false);
+    this.setr(r8, res);
+    this.inc_pc(1);
+    return 1;
+  }
+
+  // Increment data at absolute address specified by hl
+  inc_hlptr() {
+    const res = this.add8(this.mem.readByte(this.getr('hl')), 1, false, false);
+    this.mem.writeByte(this.getr('hl'), res);
+    this.inc_pc(1);
+    return 3;
+  }
+
+  // Decrement r8
+  dec_r8(r8) {
+    const res = this.sub8(this.getr(r8), 1, false, false);
+    this.setr(r8, res);
+    this.inc_pc(1);
+    return 1;
+  }
+
+  // Decrement data at absolute address specified by hl
+  dec_hlptr() {
+    const res = this.sub8(this.mem.readByte(this.getr('hl')), 1, false, false);
+    this.mem.writeByte(this.getr('hl'), res);
+    this.inc_pc(1);
+    return 3;
   }
 
 }
