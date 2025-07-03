@@ -1,8 +1,8 @@
 /**
  * Models the GameBoy's Memory Map
  */
-class Mem {
-  constructor(ROM) {
+export class Mem {
+  constructor() {
     this.romBanks = []; // ROM banks (Bank 0 fixed, others switchable)
     this.romBanks[0] = new Uint8Array(0x4000); // 16KB initial fixed ROM bank
     this.crb = 1 // Current ROM bank. Set to 1 by default (0 contains the 0x0000-0x3FFF fixed ROM bank)

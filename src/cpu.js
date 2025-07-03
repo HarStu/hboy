@@ -2,9 +2,9 @@
  * Models the state and behavior of the Gameboy's CPU
  */
 
-import { buildOpcodeTable } from "./opcodes";
+import { buildOpcodeTable } from "./opcodes.js";
 
-class CPU {
+export class CPU {
   constructor(mem) {
     // Initialize 8-bit registers
     this.r = {
@@ -272,6 +272,12 @@ class CPU {
       console.log(info)
     }
     this.inc_pc(1);
+    return 1;
+  }
+
+  // Nop
+  nop() {
+    this.inc_pc(1)
     return 1;
   }
 
