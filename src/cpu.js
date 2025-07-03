@@ -267,7 +267,10 @@ class CPU {
   // ----------------
   // All instructions return the duration in machine cycles
 
-  nop() {
+  skip(info = undefined) {
+    if (info) {
+      console.log(info)
+    }
     this.inc_pc(1);
     return 1;
   }
@@ -290,8 +293,8 @@ class CPU {
   }
 
   // Load TO r8 FROM data at absolute address specified by r16
-  ld_r8_r16ptr(r8, r16ptr) {
-    this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
+  ld_r8_r16ptr(r16ptr) {
+    this.setr('a', this.mem.readByte(this.getr(r16ptr)));
     this.inc_pc(1);
     return 2;
   }
@@ -310,9 +313,9 @@ class CPU {
     return 3;
   }
 
-  // Load TO r8 FROM data at absolute address specified by immediate two bytes
-  ld_r8_imm16ptr(r8) {
-    this.setr(r8, this.mem.readByte(this.imm16()));
+  // Load TO a FROM data at absolute address specified by immediate two bytes
+  ld_a_imm16ptr() {
+    this.setr('a', this.mem.readByte(this.imm16()));
     this.inc_pc(3);
     return 4;
   }
