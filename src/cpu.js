@@ -4,7 +4,7 @@
 
 class CPU {
   constructor(mem) {
-    // Initalize 8-bit registers
+    // Initialize 8-bit registers
     this.r = {
       'a': 0x00,
       'b': 0x00,
@@ -15,12 +15,12 @@ class CPU {
       'l': 0x00,
       'f': 0x00
     }
-    // Initalize special 16-bit registers
+    // Initialize special 16-bit registers
     this.sp = 0x00;
     this.pc = 0x00;
 
     // Flags, contained within the lower eight bits of the AF register
-    // In essense, the 'F' register is where these are stored
+    // In essence, the 'F' register is where these are stored
     this.flags = {
       // Bit 7 -- Zero Flag
       'z': false,
@@ -28,7 +28,7 @@ class CPU {
       'n': false,
       // Bit 5 -- Half Carry flag (BCD)
       'h': false,
-      // Big 4 -- Carry flag
+      // Bit 4 -- Carry flag
       'c': false
     }
 
@@ -74,8 +74,8 @@ class CPU {
     if (reg in this.r && reg != 'f') {
       return this.r[reg];
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
-      let hi = this.r[reg[0]];
-      let lo = this.r[reg[1]];
+      const hi = this.r[reg[0]];
+      const lo = this.r[reg[1]];
       if (reg == 'af') {
         // Zero out the bottom four bits of af just in case
         // in hardware, these always read as zero
@@ -95,7 +95,7 @@ class CPU {
 
   // Set specific flag
   setf(flag, val) {
-    // check that paramters are valid and update appropriate flag
+    // check that parameters are valid and update appropriate flag
     if (['z', 'n', 'h', 'c'].includes(flag) && typeof val === "boolean") {
       if (flag == 'z') {
         this.flags.z = val;
@@ -134,7 +134,7 @@ class CPU {
     return newf
   }
 
-  // Increment the stack pointer by a number of bytes
+  // Increment the program counter by a number of bytes
   inc_pc(bytes) {
     this.pc += bytes;
   }
@@ -215,13 +215,10 @@ class CPU {
     // at bit 15, not bit 7. This means we need to manually account for 
     // if we're interpreting the value as signed or unsigned in a way that
     // is automatically handled by our clamping when adding 8-bit to 8-bit
-    if (b8 > 127) {
-      b8_signed = b8 - 256;
-    } else {
-      b8_signed = b8;
-    }
-    let raw_result = a16 + b8_signed;
-    let trim_result = raw_result & 0xFFFF;
+    const b8_signed = (b8 > 127) ? b8 - 256 : b8
+
+    const raw_result = a16 + b8_signed;
+    const trim_result = raw_result & 0xFFFF;
 
     //however, all the flag logic still considers b8 as unsigned
     // manage carry flag based on low byte addition
@@ -379,7 +376,7 @@ class CPU {
   }
 
   // -----------------------
-  // 16-BIT LOAD INSTUCTIONS
+  // 16-BIT LOAD INSTRUCTIONS
   // -----------------------
   // Load TO r16 FROM immediate two bytes
   ld_r16_imm16(r16) {
@@ -447,7 +444,7 @@ class CPU {
   // Load TO hl FROM adjusted sp
   ld_hl_sp_plus_e() {
     // 'adjusted sp' refers to sp plus signed imm8
-    let adj_sp = this.add16_signed8(this.getr('sp'), this.imm8());
+    const adj_sp = this.add16_signed8(this.getr('sp'), this.imm8());
     this.setr('hl', adj_sp);
     this.inc_pc(2);
     return 3;
@@ -456,11 +453,28 @@ class CPU {
   // -----------------------------
   // 8-BIT ARITHMETIC INSTRUCTIONS
   // -----------------------------
-  // Add TO ra FROM r8
-  add_ra_r8(r8) {
-    this.setr('a', this.add8(this.getr('a'), this.getr(r8)));
+  // Add TO a FROM r8
+  add_a_r8(r8) {
+    const res = this.add8(this.getr('a'), this.getr(r8))
+    this.setr('a', res);
     this.inc_pc(1);
     return 1;
+  }
+
+  // Add TO a FROM data at absolute address specified by hl
+  add_a_hlptr() {
+    const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')));
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 2;
+  }
+
+  // Add TO a FROM immediate byte
+  add_a_n() {
+    const res = this.add8(this.getr('a'), this.imm8());
+    this.setr('a', res);
+    this.inc_pc(2);
+    return 2;
   }
 
 }
