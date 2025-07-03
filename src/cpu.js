@@ -150,33 +150,36 @@ class CPU {
   }
 
   // Helper function to make addition arith8 call more immediately readable without repeating code
-  add8(a, b, c_in = false, up_c = true) {
-    return this.arith8(a, b, false, c_in, up_c)
+  add8(a, b, use_cin = false, up_c = true) {
+    return this.arith8(a, b, false, use_cin, up_c)
   }
 
   // Helper function to make subtraction arith8 call more immediately readable without repeating code
-  sub8(a, b, c_in = false, up_c = true) {
-    return this.arith8(a, b, true, c_in, up_c)
+  sub8(a, b, use_cin = false, up_c = true) {
+    return this.arith8(a, b, true, use_cin, up_c)
   }
 
   // Add (or subtract) 8-bit values against each other
-  arith8(a, b, sub = false, c_in = false, up_c = true) {
+  arith8(a, b, sub = false, use_cin = false, up_c = true) {
     let raw_result = 0;
-    let c = this.flags.c ? 1 : 0;
+    // value of carry flag when the execution begins
+    const cin = this.flags.c ? 1 : 0
     if (sub) {
       raw_result = a - b;
-      c_in ? raw_result - c : raw_result
+      use_cin && (raw_result -= cin);
     } else {
-      raw_result = a + b + c;
-      c_in ? raw_result + c : raw_result
+      raw_result = a + b;
+      use_cin && (raw_result += cin);
     }
     let trim_result = raw_result & 0xFF;
 
     // manage carry flag
-    if ((raw_result > 0xFF || (sub && a < b)) && up_c) {
-      this.setf('c', true);
-    } else {
-      this.setf('c', false);
+    if (up_c) {
+      if (raw_result > 0xFF || (sub && raw_result < 0)) {
+        this.setf('c', true);
+      } else {
+        this.setf('c', false);
+      }
     }
 
     // manage half carry flag
@@ -441,10 +444,11 @@ class CPU {
 
     // words in memory are stored little-endian; the least significant byte is first
     // registers are big-endian; the most significant byte is first
-    // since r16 is denoted by a string, we can index is to grab its constituent 8-bit registers
-    // then set them accordingly (lsb from earlier in memory, msb from later in memory)
-    this.setr(r16[0], this.mem.readByte((cur_sp + 1) & 0xFFFF)); // set msb
-    this.setr(r16[1], this.mem.readByte(cur_sp)); // set lsb
+    // so we grab each of the bytes from memory
+    const mem_lsb = this.mem.readByte(cur_sp)
+    const mem_msb = this.mem.readByte((cur_sp + 1) & 0xFFFF)
+    const word = mem_msb << 8 | mem_lsb
+    this.setr(r16, word)
 
     //set the sp to its new value
     this.setr('sp', (cur_sp + 2) & 0xFFFF);
@@ -499,7 +503,7 @@ class CPU {
   }
 
   // Load TO a FROM a + data at absolute address specific by hl + carry flag
-  adc_a_hl() {
+  adc_a_hlptr() {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
     this.inc_pc(1);
@@ -508,7 +512,7 @@ class CPU {
 
   // Load TO a FROM a + immediate byte + carry flag
   adc_a_imm8() {
-    const res = this.add8(this.getr('a'), imm8(), true);
+    const res = this.add8(this.getr('a'), this.imm8(), true);
     this.setr('a', res);
     this.inc_pc(2);
     return 2;
