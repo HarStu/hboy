@@ -293,8 +293,8 @@ class CPU {
   }
 
   // Load TO r8 FROM data at absolute address specified by r16
-  ld_r8_r16ptr(r16ptr) {
-    this.setr('a', this.mem.readByte(this.getr(r16ptr)));
+  ld_r8_r16ptr(r8, r16ptr) {
+    this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
     this.inc_pc(1);
     return 2;
   }
