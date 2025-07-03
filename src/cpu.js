@@ -470,11 +470,20 @@ class CPU {
   }
 
   // Add TO a FROM immediate byte
-  add_a_n() {
+  add_a_imm8() {
     const res = this.add8(this.getr('a'), this.imm8());
     this.setr('a', res);
     this.inc_pc(2);
     return 2;
+  }
+
+  // Add TO a FROM r8 + carry flag 
+  adc_a_r8(r8) {
+    const a_plus_r8 = this.add8(this.getr('a'), this.getr(r8));
+    const res = this.flags.c ? this.add8(a_plus_r8, 1) : a_plus_8;
+    this.setr('a', res);
+    this.inc_pc(1);
+    return 1
   }
 
 }
