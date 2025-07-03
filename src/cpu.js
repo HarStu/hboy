@@ -561,4 +561,29 @@ class CPU {
     this.inc_pc(2);
     return 2;
   }
+
+  // Compare a WITH r8
+  // updates flags like sub_a_r8, but discards the result
+  cp_a_r8(r8) {
+    this.sub8(this.getr('a'), this.getr(r8));
+    this.inc_pc(1);
+    return 1;
+  }
+
+  // Compare a WITH data at absolute address specific by hl
+  // updates flags like sub_a_hlptr, but discards the result
+  cp_a_hlptr() {
+    this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
+    this.inc_pc(1);
+    return 2;
+  }
+
+  // Compare a WITH immediate byte
+  // updates flags like sub_a_imm8, but discards the result
+  cp_a_imm8() {
+    this.sub8(this.getr('a'), this.imm8());
+    this.inc_pc(2);
+    return 2;
+  }
+
 }
