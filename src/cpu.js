@@ -184,13 +184,13 @@ class CPU {
 
     // manage half carry flag
     if (sub) {
-      if ((b & 0xF) > (a & 0xF)) {
+      if ((a & 0xF) - (b & 0xF) - (use_cin ? cin : 0) < 0) {
         this.setf('h', true);
       } else {
         this.setf('h', false)
       }
     } else {
-      if ((a & 0xF) + (b & 0xF) > 0xF) {
+      if ((a & 0xF) + (b & 0xF) + (use_cin ? cin : 0) > 0xF) {
         this.setf('h', true);
       } else {
         this.setf('h', false);
