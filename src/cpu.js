@@ -2,6 +2,8 @@
  * Models the state and behavior of the Gameboy's CPU
  */
 
+import { buildOpcodeTable } from "./opcodes";
+
 class CPU {
   constructor(mem) {
     // Initialize 8-bit registers
@@ -34,6 +36,8 @@ class CPU {
 
     // The memory associated with the CPU
     this.mem = mem;
+
+    this.opcodes = buildOpcodeTable(this)
   }
 
   // Set the value of register 'reg' to 'val'
@@ -263,6 +267,14 @@ class CPU {
   // ----------------
   // All instructions return the duration in machine cycles
 
+  skip(info = undefined) {
+    if (info) {
+      console.log(info)
+    }
+    this.inc_pc(1);
+    return 1;
+  }
+
   // -----------------------
   // 8-BIT LOAD INSTRUCTIONS
   // -----------------------
@@ -301,9 +313,9 @@ class CPU {
     return 3;
   }
 
-  // Load TO r8 FROM data at absolute address specified by immediate two bytes
-  ld_r8_imm16ptr(r8) {
-    this.setr(r8, this.mem.readByte(this.imm16()));
+  // Load TO a FROM data at absolute address specified by immediate two bytes
+  ld_a_imm16ptr() {
+    this.setr('a', this.mem.readByte(this.imm16()));
     this.inc_pc(3);
     return 4;
   }
