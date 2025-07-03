@@ -150,12 +150,14 @@ class CPU {
   }
 
   // Add (or subtract) 8-bit values against each other
-  add8(a, b, sub = false) {
+  add8(a, b, sub = false, addc = false) {
     let raw_result = 0;
+    let c = this.flags.c ? 1 : 0;
     if (sub) {
       raw_result = a - b;
     } else {
       raw_result = a + b;
+      addc && (raw_result += c);
     }
     let trim_result = raw_result & 0xFF;
 
@@ -479,8 +481,7 @@ class CPU {
 
   // Add TO a FROM r8 + carry flag 
   adc_a_r8(r8) {
-    const a_plus_r8 = this.add8(this.getr('a'), this.getr(r8));
-    const res = this.flags.c ? this.add8(a_plus_r8, 1) : a_plus_8;
+    const res = this.add8(this.getr('a'), this.getr(r8), false, true);
     this.setr('a', res);
     this.inc_pc(1);
     return 1
