@@ -1,7 +1,7 @@
 
 export function buildOpcodeTable(cpu) {
   return {
-    0x00: () => cpu.skip(),
+    0x00: () => cpu.nop(),
     0x01: () => cpu.ld_r16_imm16('bc'),
     0x02: () => cpu.ld_r16ptr_r8('bc', 'a'),
     0x03: () => cpu.skip(),
