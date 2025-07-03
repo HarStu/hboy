@@ -403,7 +403,11 @@ class CPU {
 
   // Load TO the data at absolute address specified by immediate two bytes FROM sp
   ld_imm16ptr_sp() {
-    this.mem.writeByte(this.imm16(), this.getr('sp'));
+    const sp = this.getr('sp');
+    const msb = (sp & 0xFF00) >> 8; // s
+    const lsb = (sp & 0x00FF) // p
+    this.mem.writeByte(this.imm16(), lsb);
+    this.mem.writeByte((this.imm16() + 1) & 0xFFFF, msb)
     this.inc_pc(3);
     return 5;
   }
@@ -444,7 +448,7 @@ class CPU {
 
     // words in memory are stored little-endian; the least significant byte is first
     // registers are big-endian; the most significant byte is first
-    // so we grab each of the bytes from memory
+    // so we grab each of the bytes from memory, build a word with the mem
     const mem_lsb = this.mem.readByte(cur_sp)
     const mem_msb = this.mem.readByte((cur_sp + 1) & 0xFFFF)
     const word = mem_msb << 8 | mem_lsb
