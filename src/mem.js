@@ -18,27 +18,30 @@ export class Mem {
     this.hram = new Uint8Array(0x7E); // High RAM
     this.ie = new Uint8Array(0x1); // Interupt Enable Register
 
+    // Dispatch tables
+    this.readDispatch = new Array(0x10)
+    this.writeDispatch = new Array(0x10)
+
     // TODO -- POPULATE BANK ARRAYS WITH APPROPRIATE MEMORY BASED ON CARTRIDGE MBC
 
     // Setup readDispatch table
-    this.readDispatch = new Array(0x10)
     for (let i of [0x0, 0x1, 0x2, 0x3]) {
-      this.writeDispatch[i] = this.romBanks[0][addr];
+      this.readDispatch[i] = this.romBanks[0];
     }
     for (let i of [0x4, 0x5, 0x6, 0x7]) {
-      this.writeDispatch[i] = this.romBanks[this.crb][addr - 0x4000];
+      this.readDispatch[i] = this.romBanks[this.crb];
     }
     for (let i of [0x8, 0x9]) {
       // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
-      this.writeDispatch[i] = this.vram[addr - 0x8000]
+      this.readDispatch[i] = this.vram;
     }
     for (let i of [0xA, 0xB]) {
       // Will need to be updated for GBC support -- back half of this is switchable on the GBC
-      this.writeDispatch[i] = this.eramBanks[this.cerb][addr - 0xA000] = val;
+      this.readDispatch[i] = this.eramBanks[this.cerb];
     }
     for (let i of [0xC, 0xD]) {
       // echo ram, this is very busted and shouldn't be touched
-      this.writeDispatch[i] = this.wram[addr - 0xC000] = val;
+      this.readDispatch[i] = this.wram;
     }
     this.readDispatch[0xE] = this.wram // echo ram, this is very busted and shouldn't be touched
     this.readDispatch[0xF] = (addr) => {  // additional logic for higher-order memory
@@ -66,7 +69,6 @@ export class Mem {
     }
 
     // Setup writeDispatch table
-    this.writeDispatch = new Array(0x10)
     for (let i of [0x0, 0x1, 0x2, 0x3]) {
       this.writeDispatch[i] = (addr, val) => this.romBanks[0][addr] = val;
     }
