@@ -49,27 +49,58 @@ export class CPU {
     // So if ('bc', 0xAFCD) is passed as val, 0xAFCD is going straight into r.bc
     // When storing (little-endian) values from memory in 16-bit registers, make sure
     // to swap them from little-to-big-endian first
-    if (reg in this.r && (reg != 'f' || fok)) {
+    if (reg in this.r && (reg !== 'f' || fok)) {
       this.r[reg] = (val & 0xFF);
+      if (reg === 'f') {
+        this.refreshf()
+      }
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
       // set Hi value
       this.r[reg[0]] = (val & 0xFFFF) >> 8;
       // set Lo value
       this.r[reg[1]] = (val & 0xFF);
 
-      // If the af register is the one being set, make sure flags are handled
-      if (reg == 'af') {
-        this.flags.z = Boolean(this.r.f & 0b10000000);
-        this.flags.n = Boolean(this.r.f & 0b01000000);
-        this.flags.h = Boolean(this.r.f & 0b00100000);
-        this.flags.c = Boolean(this.r.f & 0b00010000);
-        // Make sure bottom 4 bits are zero'd out
-        this.r.f = this.r.f & 0b11110000;
+      if (reg === 'af') {
+        this.refreshf()
       }
     } else if (['sp', 'pc'].includes(reg)) {
       this[reg] = (val & 0xFFFF);
     } else {
       console.log(`Error in CPU.setr: invalid register ${reg}`);
+    }
+
+  }
+
+  // refresh flags based on the current state of f
+  refreshf() {
+    this.flags.z = Boolean(this.r.f & 0b10000000);
+    this.flags.n = Boolean(this.r.f & 0b01000000);
+    this.flags.h = Boolean(this.r.f & 0b00100000);
+    this.flags.c = Boolean(this.r.f & 0b00010000);
+    // Make sure bottom 4 bits are zero'd out
+    this.r.f = this.r.f & 0b11110000;
+  }
+
+  // Get the value of 'reg'
+  getr(reg, fok) {
+    if (reg in this.r && (reg != 'f' || fok)) {
+      return this.r[reg];
+    } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
+      const hi = this.r[reg[0]];
+      const lo = this.r[reg[1]];
+      if (reg == 'af') {
+        // Zero out the bottom four bits of af just in case
+        // in hardware, these always read as zero
+        return (hi << 8 | (lo & 0b11110000));
+      } else {
+        // otherwise return the combination of hi and lo
+        return (hi << 8 | lo);
+      }
+    } else if (['sp', 'pc'].includes(reg)) {
+      return this[reg];
+    } else {
+      console.log(`Error in CPU.getr: invalid register ${reg}`);
+      return null;
     }
   }
 
@@ -101,30 +132,6 @@ export class CPU {
     const res = this.opcodes[op]();
     return res
   }
-
-  // Get the value of 'reg'
-  getr(reg, fok) {
-    if (reg in this.r && (reg != 'f' || fok)) {
-      return this.r[reg];
-    } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
-      const hi = this.r[reg[0]];
-      const lo = this.r[reg[1]];
-      if (reg == 'af') {
-        // Zero out the bottom four bits of af just in case
-        // in hardware, these always read as zero
-        return (hi << 8 | (lo & 0b11110000));
-      } else {
-        // otherwise return the combination of hi and lo
-        return (hi << 8 | lo);
-      }
-    } else if (['sp', 'pc'].includes(reg)) {
-      return this[reg];
-    } else {
-      console.log(`Error in CPU.getr: invalid register ${reg}`);
-      return null;
-    }
-  }
-
 
   // Set specific flag
   setf(flag, val) {
@@ -439,8 +446,9 @@ export class CPU {
     const sp = this.getr('sp');
     const msb = (sp & 0xFF00) >> 8; // s
     const lsb = (sp & 0x00FF) // p
-    this.mem.writeByte(this.imm16(), lsb);
-    this.mem.writeByte((this.imm16() + 1) & 0xFFFF, msb)
+    const addr = this.imm16()
+    this.mem.writeByte(addr, lsb);
+    this.mem.writeByte((addr + 1) & 0xFFFF, msb)
     return 5;
   }
 
