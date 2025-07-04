@@ -82,8 +82,8 @@ export class CPU {
 
   // fde with some extra commentary
   test_fde() {
+    console.log(`fetching instruction at: ${this.pc}`)
     const op = this.mem.readByte(this.pc);
-    console.log(`fde cycle starting at: ${this.pc}`)
     this.inc_pc(1);
     console.log(`executing instruction: ${op.toString(16)}`);
     const res = this.opcodes[op]();

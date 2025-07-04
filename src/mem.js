@@ -11,13 +11,13 @@ export class Mem {
     this.vram = new Uint8Array(0x2000); // 8KB Video RAM, located 0x8000-0x9FFF
 
     this.eramBanks = []; // External RAM banks
+    this.eramBanks[0] = new Uint8Array(0x2000);
     this.cerb = 0; // Current eram bank. Defaults to 1 (one eram bank on cart)
-    this.eramBanks[0] == new Uint8Array(0x2000);
 
     this.wram = new Uint8Array(0x2000); // 8KB Work RAM, located 0xC000-0xDFFF
-    this.oam = new Uint8Array(0x9F); // Object Attribute Memory
-    this.io = new Uint8Array(0x7F); // I/O Registers
-    this.hram = new Uint8Array(0x7E); // High RAM
+    this.oam = new Uint8Array(0xA0); // Object Attribute Memory
+    this.io = new Uint8Array(0x80); // I/O Registers
+    this.hram = new Uint8Array(0x7F); // High RAM
     this.ie = new Uint8Array(0x1); // Interupt Enable Register
 
     // Dispatch tables
