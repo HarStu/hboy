@@ -22,11 +22,24 @@ export class Mem {
 
     // Setup readDispatch table
     this.readDispatch = new Array(0x10)
-    this.readDispatch[0x0] = this.romBanks[0]
-    this.readDispatch[0x4] = this.romBanks[this.crb]
-    this.readDispatch[0x8] = this.vram
-    this.readDispatch[0xA] = this.eramBanks[this.cerb] // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
-    this.readDispatch[0xC] = this.wram // Will need to be updated for GBC support -- back half of this is switchable on the GBC
+    for (let i of [0x0, 0x1, 0x2, 0x3]) {
+      this.writeDispatch[i] = this.romBanks[0][addr];
+    }
+    for (let i of [0x4, 0x5, 0x6, 0x7]) {
+      this.writeDispatch[i] = this.romBanks[this.crb][addr - 0x4000];
+    }
+    for (let i of [0x8, 0x9]) {
+      // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
+      this.writeDispatch[i] = this.vram[addr - 0x8000]
+    }
+    for (let i of [0xA, 0xB]) {
+      // Will need to be updated for GBC support -- back half of this is switchable on the GBC
+      this.writeDispatch[i] = this.eramBanks[this.cerb][addr - 0xA000] = val;
+    }
+    for (let i of [0xC, 0xD]) {
+      // echo ram, this is very busted and shouldn't be touched
+      this.writeDispatch[i] = this.wram[addr - 0xC000] = val;
+    }
     this.readDispatch[0xE] = this.wram // echo ram, this is very busted and shouldn't be touched
     this.readDispatch[0xF] = (addr) => {  // additional logic for higher-order memory
       if (addr < 0xFE00) {
@@ -54,11 +67,24 @@ export class Mem {
 
     // Setup writeDispatch table
     this.writeDispatch = new Array(0x10)
-    this.writeDispatch[0x0] = (addr, val) => this.romBanks[0][addr] = val;
-    this.writeDispatch[0x4] = (addr, val) => this.romBanks[this.crb][addr - 0x4000] = val;
-    this.writeDispatch[0x8] = (addr, val) => this.vram[addr - 0x8000] = val; // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
-    this.writeDispatch[0xA] = (addr, val) => this.eramBanks[this.cerb][addr - 0xA000] = val; // Will need to be updated for GBC support -- back half of this is switchable on the GBC
-    this.writeDispatch[0xC] = (addr, val) => this.wram[addr - 0xC000] = val; // echo ram, this is very busted and shouldn't be touched
+    for (let i of [0x0, 0x1, 0x2, 0x3]) {
+      this.writeDispatch[i] = (addr, val) => this.romBanks[0][addr] = val;
+    }
+    for (let i of [0x4, 0x5, 0x6, 0x7]) {
+      this.writeDispatch[i] = (addr, val) => this.romBanks[this.crb][addr - 0x4000] = val;
+    }
+    for (let i of [0x8, 0x9]) {
+      // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
+      this.writeDispatch[i] = (addr, val) => this.vram[addr - 0x8000] = val;
+    }
+    for (let i of [0xA, 0xB]) {
+      // Will need to be updated for GBC support -- back half of this is switchable on the GBC
+      this.writeDispatch[i] = (addr, val) => this.eramBanks[this.cerb][addr - 0xA000] = val;
+    }
+    for (let i of [0xC, 0xD]) {
+      // echo ram, this is very busted and shouldn't be touched
+      this.writeDispatch[i] = (addr, val) => this.wram[addr - 0xC000] = val;
+    }
     this.writeDispatch[0xE] = (addr, val) => this.wram[addr - 0xE000] = val; // additional logic for higher-order memory
     this.writeDispatch[0xF] = (addr, val) => {
       if (addr < 0xFE00) {
@@ -90,7 +116,9 @@ export class Mem {
   }
 
   writeByte(addr, val) {
+    console.log(`writing ${val} to ${addr}`)
     const region = addr >> 12;
+    console.log(`region: ${region}`)
     this.writeDispatch[region](addr, val);
   }
 
