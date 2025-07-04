@@ -446,8 +446,9 @@ export class CPU {
     const sp = this.getr('sp');
     const msb = (sp & 0xFF00) >> 8; // s
     const lsb = (sp & 0x00FF) // p
-    this.mem.writeByte(this.imm16(), lsb);
-    this.mem.writeByte((this.imm16() + 1) & 0xFFFF, msb)
+    const addr = this.imm16()
+    this.mem.writeByte(addr, lsb);
+    this.mem.writeByte((addr + 1) & 0xFFFF, msb)
     return 5;
   }
 
