@@ -85,8 +85,9 @@ export class CPU {
     const op = this.mem.readByte(this.pc);
     console.log(`fde cycle starting at: ${this.pc}`)
     this.inc_pc(1);
-    console.log(`Executing instruction: ${op.toString(16)}`);
-    this.opcodes[op]();
+    console.log(`executing instruction: ${op.toString(16)}`);
+    const res = this.opcodes[op]();
+    return res
   }
 
   // Get the value of 'reg'
@@ -287,11 +288,11 @@ export class CPU {
   // ----------------
   // All instructions return the duration in machine cycles
 
-  skip(info = undefined) {
+  unimp(info = undefined) {
     if (info) {
       console.log(info)
     }
-    return 1;
+    return -1;
   }
 
   // Nop
