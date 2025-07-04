@@ -81,11 +81,23 @@ export class CPU {
   }
 
   // fde with some extra commentary
-  test_fde() {
-    // console.log(`fetching instruction at: ${this.pc}`)
+  test_fde(verbose, final_pc) {
+    verbose && console.log(`fetching instruction at: ${this.pc}`)
+
     const op = this.mem.readByte(this.pc);
+    verbose && console.log(`Retrieved op 0x${op.toString(16).toUpperCase()}, incrementing pc and checking if pc matches final`)
     this.inc_pc(1);
-    // console.log(`executing instruction: ${op.toString(16)}`);
+
+    verbose && console.log(`does ${this.pc} === ${Number(final_pc)} ?`)
+    if (this.pc === Number(final_pc)) {
+      verbose && console.log("completed test")
+      return -2
+    } else {
+      verbose && console.log(`\tnope!`)
+    }
+
+    verbose && console.log(`executing instruction: ${op.toString(16)}`);
+
     const res = this.opcodes[op]();
     return res
   }

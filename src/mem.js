@@ -49,14 +49,14 @@ export class Mem {
     this.readDispatch[0xF] = (addr) => {  // additional logic for higher-order memory
       if (addr < 0xFE00) {
         // Echo RAM
-        console.log(`WARN in Mem.readByte: Loaded from 'Echo Ram' at addr ${addr}`);
+        // console.log(`WARN in Mem.readByte: Loaded from 'Echo Ram' at addr ${addr}`);
         return this.wram[addr - 0xE000];
       } else if (addr >= 0xFE00 && addr < 0xFEA0) {
         // Object Attribute Memory
         return this.oam[addr - 0xFE00];
       } else if (addr >= 0xFEA0 && addr < 0xFF00) {
         // Unusable Memory
-        console.log(`Error in Mem.readByte: Attempt to load unusable memory at addr ${addr}`);
+        // console.log(`Error in Mem.readByte: Attempt to load unusable memory at addr ${addr}`);
         return 0xFF;
       } else if (addr >= 0xFF00 && addr < 0xFF80) {
         // from I/O Registers
@@ -93,14 +93,14 @@ export class Mem {
     this.writeDispatch[0xF] = (addr, val) => {
       if (addr < 0xFE00) {
         // Echo RAM
-        console.log(`WARN in Mem.writeByte: write to 'Echo Ram' at addr ${addr}`);
+        // console.log(`WARN in Mem.writeByte: write to 'Echo Ram' at addr ${addr}`);
         this.wram[addr - 0xE000] = val;
       } else if (addr >= 0xFE00 && addr < 0xFEA0) {
         // Object Attribute Memory
         this.oam[addr - 0xFE00] = val;
       } else if (addr >= 0xFEA0 && addr < 0xFF00) {
         // Unusable Memory
-        console.log(`Error in Mem.weadbyte: Attempt to write to unusable memory at addr ${addr}`);
+        // console.log(`Error in Mem.readbyte: Attempt to write to unusable memory at addr ${addr}`);
       } else if (addr >= 0xFF00 && addr < 0xFF80) {
         // I/O Registers
         this.io[addr - 0xFF00] = val;
