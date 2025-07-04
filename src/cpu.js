@@ -76,6 +76,7 @@ export class CPU {
   // fetch, decode, and execute a single instruction
   fde() {
     const op = this.mem.readByte(this.pc);
+    console.log(`fde cycle starting at: ${this.pc}`)
     this.inc_pc(1);
     console.log(`Executing instruction: ${op.toString(16)}`);
     this.opcodes[op]();
@@ -148,7 +149,7 @@ export class CPU {
 
   // Increment the program counter by a number of bytes
   inc_pc(bytes) {
-    this.pc += bytes;
+    this.pc = (this.pc + bytes) & 0xFFFF;
   }
 
   // Grab the byte of data immediately following the program counter
