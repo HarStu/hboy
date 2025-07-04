@@ -73,6 +73,12 @@ export class CPU {
     }
   }
 
+  // fetch, decode, and execute a single instruction
+  cycle() {
+    const op = this.mem.readByte(this.pc)
+    this.opcodes[op]()
+  }
+
   // Get the value of 'reg'
   getr(reg, fok) {
     if (reg in this.r && (reg != 'f' || fok)) {

@@ -118,9 +118,7 @@ export class Mem {
   }
 
   writeByte(addr, val) {
-    console.log(`writing ${val} to ${addr}`)
     const region = addr >> 12;
-    console.log(`region: ${region}`)
     this.writeDispatch[region](addr, val);
   }
 }
