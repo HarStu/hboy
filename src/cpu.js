@@ -81,12 +81,25 @@ export class CPU {
   }
 
   // fde with some extra commentary
-  test_fde() {
+  test_fde(verbose, final_pc) {
+    verbose && console.log(`fetching instruction at: ${this.pc}`)
+
     const op = this.mem.readByte(this.pc);
-    console.log(`fde cycle starting at: ${this.pc}`)
+    verbose && console.log(`Retrieved op 0x${op.toString(16).toUpperCase()}, incrementing pc and checking if pc matches final`)
     this.inc_pc(1);
-    console.log(`Executing instruction: ${op.toString(16)}`);
-    this.opcodes[op]();
+
+    verbose && console.log(`does ${this.pc} === ${Number(final_pc)} ?`)
+    if (this.pc === Number(final_pc)) {
+      verbose && console.log("completed test")
+      return -2
+    } else {
+      verbose && console.log(`\tnope!`)
+    }
+
+    verbose && console.log(`executing instruction: ${op.toString(16)}`);
+
+    const res = this.opcodes[op]();
+    return res
   }
 
   // Get the value of 'reg'
@@ -287,11 +300,11 @@ export class CPU {
   // ----------------
   // All instructions return the duration in machine cycles
 
-  skip(info = undefined) {
+  unimp(info = undefined) {
     if (info) {
       console.log(info)
     }
-    return 1;
+    return -1;
   }
 
   // Nop
