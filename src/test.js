@@ -63,7 +63,7 @@ async function fullTestSuite() {
           const ramCheck = test.final.ram.every(([addr, val]) => gb.mem.readByte(addr) === val)
 
           if (regCheck && ramCheck) {
-            console.log(`PASS: test ${test.name}`)
+            // console.log(`PASS: test ${test.name}`)
             passCount++
           } else {
             console.log(`FAIL: test ${test.name}\n\tregCheck: ${regCheck} (${badReg})\n\tramCheck: ${ramCheck}\n\tcycles:  ${cycleCount}`)
@@ -127,5 +127,5 @@ async function oneTest() {
   }
 }
 
-// oneTest()
-fullTestSuite()
+oneTest()
+//fullTestSuite()
