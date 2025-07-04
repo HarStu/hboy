@@ -73,6 +73,22 @@ export class CPU {
     }
   }
 
+  // fetch, decode, and execute a single instruction
+  fde() {
+    const op = this.mem.readByte(this.pc);
+    this.inc_pc(1);
+    this.opcodes[op]();
+  }
+
+  // fde with some extra commentary
+  test_fde() {
+    const op = this.mem.readByte(this.pc);
+    console.log(`fde cycle starting at: ${this.pc}`)
+    this.inc_pc(1);
+    console.log(`Executing instruction: ${op.toString(16)}`);
+    this.opcodes[op]();
+  }
+
   // Get the value of 'reg'
   getr(reg, fok) {
     if (reg in this.r && (reg != 'f' || fok)) {
@@ -140,17 +156,21 @@ export class CPU {
 
   // Increment the program counter by a number of bytes
   inc_pc(bytes) {
-    this.pc += bytes;
+    this.pc = (this.pc + bytes) & 0xFFFF;
   }
 
   // Grab the byte of data immediately following the program counter
   imm8() {
-    return this.mem.readByte(this.getr('pc') + 1);
+    const byte = this.mem.readByte(this.getr('pc'));
+    this.inc_pc(1);
+    return byte;
   }
 
   // Grab the two bytes of data immediately following the program counter (they are little-endian in memory)
   imm16() {
-    return this.mem.readByte(this.getr('pc') + 2) << 8 | this.mem.readByte(this.getr('pc') + 1);
+    const word = this.mem.readByte(this.getr('pc') + 1) << 8 | this.mem.readByte(this.getr('pc'));
+    this.inc_pc(2);
+    return word;
   }
 
   // Helper function to make addition arith8 call more immediately readable without repeating code
@@ -271,13 +291,11 @@ export class CPU {
     if (info) {
       console.log(info)
     }
-    this.inc_pc(1);
     return 1;
   }
 
   // Nop
   nop() {
-    this.inc_pc(1)
     return 1;
   }
 
@@ -287,77 +305,66 @@ export class CPU {
   // Load TO r8_1 FROM r8_2
   ld_r8_r8(r8_1, r8_2) {
     this.setr(r8_1, this.getr(r8_2));
-    this.inc_pc(1);
     return 1;
   }
 
   // Load TO r8 FROM immediate byte
   ld_r8_imm8(r8) {
     this.setr(r8, this.imm8());
-    this.inc_pc(2);
     return 2;
   }
 
   // Load TO r8 FROM data at absolute address specified by r16
   ld_r8_r16ptr(r8, r16ptr) {
     this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
-    this.inc_pc(1);
     return 2;
   }
 
   // Load TO data at absolute address specified by r16 FROM r8
   ld_r16ptr_r8(r16ptr, r8) {
     this.mem.writeByte(this.getr(r16ptr), this.getr(r8));
-    this.inc_pc(1);
     return 2;
   }
 
   // Load TO data at absolute address specified by r16ptr FROM immediate byte
   ld_r16ptr_imm8(r16ptr) {
     this.mem.writeByte(this.getr(r16ptr), this.imm8());
-    this.inc_pc(2);
     return 3;
   }
 
   // Load TO a FROM data at absolute address specified by immediate two bytes
   ld_a_imm16ptr() {
     this.setr('a', this.mem.readByte(this.imm16()));
-    this.inc_pc(3);
     return 4;
   }
 
   // Load TO data at absolute address specified by immediate two bytes FROM r8
   ld_imm16ptr_r8(r8) {
     this.mem.writeByte(this.imm16(), this.getr(r8));
-    this.inc_pc(3);
     return 4;
   }
 
   // Load TO a FROM data at absolute address specified by register C + 0xFF00
   ld_a_ffcptr() {
     this.setr('a', this.mem.readByte(this.getr('c') + 0xFF00));
-    this.inc_pc(1);
     return 2;
   }
 
   // Load TO data at absolute address specified by register C + 0xFF00 FROM a
   ld_ffcptr_a() {
     this.mem.writeByte(this.getr('c') + 0xFF00, this.getr('a'));
-    this.inc_pc(1);
     return 2;
   }
 
   // Load TO a FROM data at absolute address specified by immediate byte + 0xFF00
   ld_a_ffimm8ptr() {
     this.setr('a', this.mem.readByte(this.imm8() + 0xFF00));
-    this.inc_pc(2);
     return 3;
   }
 
   // Load TO data at absolute address specified by immediate byte + 0xFF00 FROM a
   ld_ffimm8ptr_a() {
     this.mem.writeByte(this.imm8() + 0xFF00, this.getr('a'));
-    this.inc_pc(2);
     return 3;
   }
 
@@ -369,7 +376,6 @@ export class CPU {
     this.setr('a', this.mem.readByte(cur_hl));
     // decrement hl with 16-bit wrap-around using bitwise and
     this.setr('hl', (cur_hl - 1) & 0xFFFF);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -381,7 +387,6 @@ export class CPU {
     this.mem.writeByte(cur_hl, this.getr('a'));
     // decrement hl with 16-bit wrap-around using bitwise and
     this.setr('hl', (cur_hl - 1) & 0xFFFF);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -393,7 +398,6 @@ export class CPU {
     this.setr('a', this.mem.readByte(cur_hl));
     // increment hl with 16-bit wrap-around using bitwise and
     this.setr('hl', (cur_hl + 1) & 0xFFFF);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -405,7 +409,6 @@ export class CPU {
     this.mem.writeByte(cur_hl, this.getr('a'));
     // increment hl with 16-bit wrap-around using bitwise and
     this.setr('hl', (cur_hl + 1) & 0xFFFF);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -415,7 +418,6 @@ export class CPU {
   // Load TO r16 FROM immediate two bytes
   ld_r16_imm16(r16) {
     this.setr(r16, this.imm16());
-    this.inc_pc(3);
     return 3;
   }
 
@@ -426,14 +428,12 @@ export class CPU {
     const lsb = (sp & 0x00FF) // p
     this.mem.writeByte(this.imm16(), lsb);
     this.mem.writeByte((this.imm16() + 1) & 0xFFFF, msb)
-    this.inc_pc(3);
     return 5;
   }
 
   // Load TO sp FROM hl
   ld_sp_hl() {
     this.setr('sp', this.getr('hl'));
-    this.inc_pc(1);
     return 2;
   }
 
@@ -455,7 +455,6 @@ export class CPU {
 
     // set the sp to its new value
     this.setr('sp', (cur_sp - 2) & 0xFFFF);
-    this.inc_pc(1);
     return 4;
   }
 
@@ -476,7 +475,6 @@ export class CPU {
     this.setr('sp', (cur_sp + 2) & 0xFFFF);
 
     // while 'pop af' completely re-writes the f register, flag updates are handled in setr
-    this.inc_pc(1);
     return 3;
   }
 
@@ -485,7 +483,6 @@ export class CPU {
     // 'adjusted sp' refers to sp plus signed imm8
     const adj_sp = this.add16_signed8(this.getr('sp'), this.imm8());
     this.setr('hl', adj_sp);
-    this.inc_pc(2);
     return 3;
   }
 
@@ -496,7 +493,6 @@ export class CPU {
   add_a_r8(r8) {
     const res = this.add8(this.getr('a'), this.getr(r8))
     this.setr('a', res);
-    this.inc_pc(1);
     return 1;
   }
 
@@ -504,7 +500,6 @@ export class CPU {
   add_a_hlptr() {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     this.setr('a', res);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -512,7 +507,6 @@ export class CPU {
   add_a_imm8() {
     const res = this.add8(this.getr('a'), this.imm8());
     this.setr('a', res);
-    this.inc_pc(2);
     return 2;
   }
 
@@ -520,7 +514,6 @@ export class CPU {
   adc_a_r8(r8) {
     const res = this.add8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
-    this.inc_pc(1);
     return 1
   }
 
@@ -528,7 +521,6 @@ export class CPU {
   adc_a_hlptr() {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -536,7 +528,6 @@ export class CPU {
   adc_a_imm8() {
     const res = this.add8(this.getr('a'), this.imm8(), true);
     this.setr('a', res);
-    this.inc_pc(2);
     return 2;
   }
 
@@ -544,7 +535,6 @@ export class CPU {
   sub_a_r8(r8) {
     const res = this.sub8(this.getr('a'), this.getr(r8));
     this.setr('a', res);
-    this.inc_pc(1);
     return 1;
   }
 
@@ -552,7 +542,6 @@ export class CPU {
   sub_a_hlptr() {
     const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     this.setr('a', res);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -560,7 +549,6 @@ export class CPU {
   sub_a_imm8() {
     const res = this.sub8(this.getr('a'), this.imm8());
     this.setr('a', res);
-    this.inc_pc(2);
     return 2;
   }
 
@@ -568,7 +556,6 @@ export class CPU {
   sbc_a_r8(r8) {
     const res = this.sub8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
-    this.inc_pc(1);
     return 1;
   }
 
@@ -576,7 +563,6 @@ export class CPU {
   sbc_a_hlptr() {
     const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
-    this.inc_pc(1);
     return 2;
   }
 
@@ -584,7 +570,6 @@ export class CPU {
   sbc_a_imm8() {
     const res = this.sub8(this.getr('a'), this.imm8(), true);
     this.setr('a', res);
-    this.inc_pc(2);
     return 2;
   }
 
@@ -592,7 +577,6 @@ export class CPU {
   // updates flags like sub_a_r8, but discards the result
   cp_a_r8(r8) {
     this.sub8(this.getr('a'), this.getr(r8));
-    this.inc_pc(1);
     return 1;
   }
 
@@ -600,7 +584,6 @@ export class CPU {
   // updates flags like sub_a_hlptr, but discards the result
   cp_a_hlptr() {
     this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
-    this.inc_pc(1);
     return 2;
   }
 
@@ -608,7 +591,6 @@ export class CPU {
   // updates flags like sub_a_imm8, but discards the result
   cp_a_imm8() {
     this.sub8(this.getr('a'), this.imm8());
-    this.inc_pc(2);
     return 2;
   }
 
@@ -616,7 +598,6 @@ export class CPU {
   inc_r8(r8) {
     const res = this.add8(this.getr(r8), 1, false, false);
     this.setr(r8, res);
-    this.inc_pc(1);
     return 1;
   }
 
@@ -624,7 +605,6 @@ export class CPU {
   inc_hlptr() {
     const res = this.add8(this.mem.readByte(this.getr('hl')), 1, false, false);
     this.mem.writeByte(this.getr('hl'), res);
-    this.inc_pc(1);
     return 3;
   }
 
@@ -632,7 +612,6 @@ export class CPU {
   dec_r8(r8) {
     const res = this.sub8(this.getr(r8), 1, false, false);
     this.setr(r8, res);
-    this.inc_pc(1);
     return 1;
   }
 
@@ -640,7 +619,6 @@ export class CPU {
   dec_hlptr() {
     const res = this.sub8(this.mem.readByte(this.getr('hl')), 1, false, false);
     this.mem.writeByte(this.getr('hl'), res);
-    this.inc_pc(1);
     return 3;
   }
 

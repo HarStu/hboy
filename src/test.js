@@ -42,20 +42,30 @@ const test = JSON.parse(
 // build a gb
 const gb = new GB()
 
+// setup ram from intial test values
 test.initial.ram.forEach(([addr, val]) => gb.mem.writeByte(addr, val));
+// setup registers from initial test values
+['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => gb.cpu.setr(r, test.initial[r], true));
 
-console.log(test);
+// To accomodate tests starting from post-fetch mid-fde state, back up pc by one byte
+gb.cpu.setr('pc', (test.initial['pc'] - 1) & 0xFFFF)
 
-['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => {
-  console.log(`setting ${r}`)
-  return gb.cpu.setr(r, test.initial[r], true)
-});
+// while PC is not at its final value, run op
+let cycleCount = 0
+while (gb.cpu.getr('pc') !== test.final['pc'] && cycleCount < 1000) {
+  gb.cpu.test_fde()
+  cycleCount++
+}
 
-const op = gb.mem.readByte(gb.cpu.getr('pc'))
-gb.cpu.opcodes[op]();
-
-const regsOK = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => gb.cpu.getr(r) === test.final[r])
+// check if registers match
+const regsOK = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => {
+  // console.log(`for reg ${r}:\n\tgb:   ${gb.cpu.getr(r, true)}\n\ttest: ${test.final[r]}`)
+  return gb.cpu.getr(r, true) === test.final[r]
+})
+// check if ram matches
 const ramOK = test.final.ram.every(([addr, val]) => gb.mem.readByte(addr) === val)
 
+// output result
 console.log(regsOK)
 console.log(ramOK)
+console.log(cycleCount)
