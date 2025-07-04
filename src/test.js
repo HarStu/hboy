@@ -127,5 +127,5 @@ async function oneTest() {
   }
 }
 
-oneTest()
-// fullTestSuite()
+//oneTest()
+fullTestSuite()
