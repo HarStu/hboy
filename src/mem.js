@@ -19,8 +19,51 @@ export class Mem {
     this.ie = new Uint8Array(0x1); // Interupt Enable Register
 
     // TODO -- POPULATE BANK ARRAYS WITH APPROPRIATE MEMORY BASED ON CARTRIDGE MBC
+
+    // Setup readDispatch table
+    this.readDispatch = new Array(0x10)
+    this.readDispatch[0x0] = this.romBanks[0]
+    this.readDispatch[0x4] = this.romBanks[this.crb]
+    this.readDispatch[0x8] = this.vram
+    this.readDispatch[0xA] = this.eramBanks[this.cerb] // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
+    this.readDispatch[0xC] = this.wram // Will need to be updated for GBC support -- back half of this is switchable on the GBC
+    this.readDispatch[0xE] = this.wram // echo ram, this is very busted and shouldn't be touched
+    this.readDispatch[0xF] = (addr) => {  // additional logic for higher-order memory
+      if (addr < 0xFE00) {
+        // Return from Echo RAM
+        console.log(`WARN in Mem.readbyte: Loaded from 'Echo Ram' at addr ${addr}`);
+        return this.wram[addr - 0xE000];
+      } else if (addr >= 0xFE00 && addr < 0xFEA0) {
+        // Return from Object Attribute Memory
+        return this.oam[addr - 0xFE00];
+      } else if (addr >= 0xFEA0 && addr < 0xFF00) {
+        // (Attempt to) return from Unusable Memory
+        console.log(`Error in Mem.readbyte: Attempt to load unusable memory at addr ${addr}`);
+        return 0xFF;
+      } else if (addr >= 0xFF00 && addr < 0xFF80) {
+        // Return from I/O Registers
+        return this.io[addr - 0xFF00];
+      } else if (addr >= 0xFF80 && addr < 0xFFFF) {
+        // Return from High RAM
+        return this.hram[addr - 0xFF80];
+      } else if (addr == 0xFFFF) {
+        // Return Interupt Enable Register
+        return this.ie[0];
+      }
+
+    }
   }
 
+  readByte(addr) {
+    const region = addr >> 12;
+    return readDispatch[region](addr);
+  }
+
+  writeByte(addr) {
+
+  }
+
+  /*
   readByte(addr) {
     if (addr >= 0x0000 && addr < 0x4000) {
       // Return from first fixed ROM bank
@@ -67,7 +110,7 @@ export class Mem {
       return 0xFF;
     }
   }
-
+  
   writeByte(addr, val) {
     if (val < 0x00 || val > 0xFF) {
       console.log(`ERROR in Mem.writebyte: Attempt to write non-byte val ${val}`)
@@ -115,4 +158,5 @@ export class Mem {
       console.log(`Error in Mem.writebyte: Attempted to write outside memory map at ${addr}`);
     }
   }
+  */
 }
