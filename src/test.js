@@ -53,13 +53,13 @@ gb.cpu.setr('pc', (test.initial['pc'] - 1) & 0xFFFF)
 // while PC is not at its final value, run op
 let cycleCount = 0
 while (gb.cpu.getr('pc') !== test.final['pc'] && cycleCount < 1000) {
-  gb.cpu.fde()
+  gb.cpu.test_fde()
   cycleCount++
 }
 
 // check if registers match
 const regsOK = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => {
-  console.log(`for reg ${r}:\n\tgb:   ${gb.cpu.getr(r, true)}\n\ttest: ${test.final[r]}`)
+  // console.log(`for reg ${r}:\n\tgb:   ${gb.cpu.getr(r, true)}\n\ttest: ${test.final[r]}`)
   return gb.cpu.getr(r, true) === test.final[r]
 })
 // check if ram matches

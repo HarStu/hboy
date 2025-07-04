@@ -76,6 +76,13 @@ export class CPU {
   // fetch, decode, and execute a single instruction
   fde() {
     const op = this.mem.readByte(this.pc);
+    this.inc_pc(1);
+    this.opcodes[op]();
+  }
+
+  // fde with some extra commentary
+  test_fde() {
+    const op = this.mem.readByte(this.pc);
     console.log(`fde cycle starting at: ${this.pc}`)
     this.inc_pc(1);
     console.log(`Executing instruction: ${op.toString(16)}`);
