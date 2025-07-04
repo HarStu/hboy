@@ -13,6 +13,9 @@ let passCount = 0
 let failCount = 0
 let unimpCount = 0
 
+const failMap = new Map()
+const passMap = new Map()
+
 for (const test_file of test_files) {
   if (!test_file.endsWith('.json')) {
     continue;
@@ -46,7 +49,6 @@ for (const test_file of test_files) {
       }
 
       if (!noUnimp) {
-        console.log(`test ${test.name} contains unimplemented instructions`)
         unimpCount++
       } else {
         // check if registers match
@@ -69,4 +71,4 @@ for (const test_file of test_files) {
   }
 }
 
-console.log(`\nPASS: ${passCount}\nFAIL: ${failCount}\nUNIMPLEMENTED:${unimpCount}`)
+console.log(`\nPASS: ${passCount}\nFAIL: ${failCount}\nUNIMPLEMENTED: ${unimpCount}`)
