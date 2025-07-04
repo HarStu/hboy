@@ -16,6 +16,7 @@ export class Mem {
 
     this.wram = new Uint8Array(0x2000); // 8KB Work RAM, located 0xC000-0xDFFF
     this.oam = new Uint8Array(0xA0); // Object Attribute Memory
+    this.unused = new Uint8Array(0x60); // Unused memory (some homebrew uses this memory)
     this.io = new Uint8Array(0x80); // I/O Registers
     this.hram = new Uint8Array(0x7F); // High RAM
     this.ie = new Uint8Array(0x1); // Interupt Enable Register
@@ -55,9 +56,8 @@ export class Mem {
         // Object Attribute Memory
         return this.oam[addr - 0xFE00];
       } else if (addr >= 0xFEA0 && addr < 0xFF00) {
-        // Unusable Memory
-        // console.log(`Error in Mem.readByte: Attempt to load unusable memory at addr ${addr}`);
-        return 0xFF;
+        // Unusable Memory 
+        return this.unused[addr - 0xFEA0];
       } else if (addr >= 0xFF00 && addr < 0xFF80) {
         // from I/O Registers
         return this.io[addr - 0xFF00];
@@ -100,7 +100,7 @@ export class Mem {
         this.oam[addr - 0xFE00] = val;
       } else if (addr >= 0xFEA0 && addr < 0xFF00) {
         // Unusable Memory
-        // console.log(`Error in Mem.readbyte: Attempt to write to unusable memory at addr ${addr}`);
+        this.unused[addr - 0xFEA0] = val;
       } else if (addr >= 0xFF00 && addr < 0xFF80) {
         // I/O Registers
         this.io[addr - 0xFF00] = val;
