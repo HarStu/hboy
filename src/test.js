@@ -11,7 +11,7 @@ function primeMemory(mem, pairs) {
 
 function loadRegisters(cpu, snap) {
   for (const r of ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp']) {
-    cpu.set(r, snap[r])
+    cpu.setr(r, snap[r])
   }
 }
 
@@ -30,6 +30,7 @@ function checkRam(mem, pairs) {
       return false
     }
   }
+  return true
 }
 
 const test = JSON.parse(
@@ -41,13 +42,20 @@ const test = JSON.parse(
 // build a gb
 const gb = new GB()
 
-test.initial.ram.forEach(([addr, val]) => gb.mem.writeByte(addr, val))
-['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => gb.cpu.setr(r, test.initial[r]))
+test.initial.ram.forEach(([addr, val]) => gb.mem.writeByte(addr, val));
 
-const op = gb.mem.readByte(cpu.getr('pc'))
+console.log(test);
+
+['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => {
+  console.log(`setting ${r}`)
+  return gb.cpu.setr(r, test.initial[r], true)
+});
+
+const op = gb.mem.readByte(gb.cpu.getr('pc'))
 gb.cpu.opcodes[op]();
 
-const regsOk = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => gb.cpu.get(r) === test.final[r])
-const ramOk = test.final.ram.every(([addr, val]) => gb.mem.readByte(addr) === val)
+const regsOK = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => gb.cpu.getr(r) === test.final[r])
+const ramOK = test.final.ram.every(([addr, val]) => gb.mem.readByte(addr) === val)
 
-console.log(regsOK && ramOK ? 'Pass' : 'Fail')
+console.log(regsOK)
+console.log(ramOK)

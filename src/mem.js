@@ -26,24 +26,24 @@ export class Mem {
 
     // Setup readDispatch table
     for (let i of [0x0, 0x1, 0x2, 0x3]) {
-      this.readDispatch[i] = this.romBanks[0];
+      this.readDispatch[i] = (addr) => this.romBanks[0][addr];
     }
     for (let i of [0x4, 0x5, 0x6, 0x7]) {
-      this.readDispatch[i] = this.romBanks[this.crb];
+      this.readDispatch[i] = (addr) => this.romBanks[this.crb][addr - 0x4000];
     }
     for (let i of [0x8, 0x9]) {
-      // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
-      this.readDispatch[i] = this.vram;
+      // might have to redo to avoid crash where cerb = (addr) => -1 (no current external ram bank)
+      this.readDispatch[i] = (addr) => this.vram[addr - 0x8000];
     }
     for (let i of [0xA, 0xB]) {
       // Will need to be updated for GBC support -- back half of this is switchable on the GBC
-      this.readDispatch[i] = this.eramBanks[this.cerb];
+      this.readDispatch[i] = (addr) => this.eramBanks[this.cerb][addr - 0xA000];
     }
     for (let i of [0xC, 0xD]) {
       // echo ram, this is very busted and shouldn't be touched
-      this.readDispatch[i] = this.wram;
+      this.readDispatch[i] = (addr) => this.wram[addr - 0xC000];
     }
-    this.readDispatch[0xE] = this.wram // echo ram, this is very busted and shouldn't be touched
+    this.readDispatch[0xE] = (addr) => this.wram[addr - 0xE000] // echo ram, this is very busted and shouldn't be touched
     this.readDispatch[0xF] = (addr) => {  // additional logic for higher-order memory
       if (addr < 0xFE00) {
         // Echo RAM

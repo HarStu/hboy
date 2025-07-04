@@ -41,7 +41,7 @@ export class CPU {
   }
 
   // Set the value of register 'reg' to 'val'
-  setr(reg, val) {
+  setr(reg, val, fok = false) {
     // Todo -- maybe apply a warning here where there's an attempt to store values greater
     // than 8/16 bits?
 
@@ -49,7 +49,7 @@ export class CPU {
     // So if ('bc', 0xAFCD) is passed as val, 0xAFCD is going straight into r.bc
     // When storing (little-endian) values from memory in 16-bit registers, make sure
     // to swap them from little-to-big-endian first
-    if (reg in this.r && reg != 'f') {
+    if (reg in this.r && (reg != 'f' || fok)) {
       this.r[reg] = (val & 0xFF);
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
       // set Hi value
@@ -74,8 +74,8 @@ export class CPU {
   }
 
   // Get the value of 'reg'
-  getr(reg) {
-    if (reg in this.r && reg != 'f') {
+  getr(reg, fok) {
+    if (reg in this.r && (reg != 'f' || fok)) {
       return this.r[reg];
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
       const hi = this.r[reg[0]];
