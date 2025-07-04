@@ -66,7 +66,7 @@ async function fullTestSuite() {
             // console.log(`PASS: test ${test.name}`)
             passCount++
           } else {
-            console.log(`FAIL: test ${test.name}\n\tregCheck: ${regCheck} (${badReg})\n\tramCheck: ${ramCheck}\n\tcycles:  ${cycleCount}`)
+            console.log(`FAIL: test ${test.name} (file: ${test_file})\n\tregCheck: ${regCheck} (${badReg})\n\tramCheck: ${ramCheck}\n\tcycles:  ${cycleCount}`)
             failCount++
           }
         }
@@ -127,5 +127,5 @@ async function oneTest() {
   }
 }
 
-// oneTest()
-fullTestSuite()
+oneTest()
+// fullTestSuite()

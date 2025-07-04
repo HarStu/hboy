@@ -461,7 +461,7 @@ export class CPU {
   // Push TO stack memory FROM r16
   push_r16(r16) {
     // current sp as of the time execution of this operation begins
-    const cur_sp = this.getr('sp');
+    const cur_sp = this.sp;
     // words in memory are stored little-endian; the least significant byte is first
     // registers are big-endian; the most significant byte is first
     // grab the msb and lsb from r16
@@ -482,13 +482,18 @@ export class CPU {
   // Pop TO r16 FROM stack memory
   pop_r16(r16) {
     // current sp as of the time execution of this operation begins
-    const cur_sp = this.getr('sp');
+    const cur_sp = this.sp;
 
     // words in memory are stored little-endian; the least significant byte is first
     // registers are big-endian; the most significant byte is first
     // so we grab each of the bytes from memory, build a word with the mem
+
+    console.log(`\nloading value at stack pointer to hl`)
+
     const mem_lsb = this.mem.readByte(cur_sp)
     const mem_msb = this.mem.readByte((cur_sp + 1) & 0xFFFF)
+    console.log(`sp: ${this.sp} lsb: ${mem_lsb}, msb: ${mem_msb}`)
+
     const word = mem_msb << 8 | mem_lsb
     this.setr(r16, word)
 
