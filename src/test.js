@@ -35,7 +35,7 @@ function checkRam(mem, pairs) {
 
 const test_col = JSON.parse(
   fs.readFileSync(
-    new URL('/Users/h/Files/Repos/GameboyCPUTests/v2/00.json', import.meta.url), 'utf8'
+    new URL('/Users/h/Files/Repos/GameboyCPUTests/v2/01.json', import.meta.url), 'utf8'
   )
 )
 for (const test of test_col) {
