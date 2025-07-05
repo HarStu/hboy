@@ -1,11 +1,17 @@
 /**
  * Models the state and behavior of the Gameboy's CPU
  */
-
+import { Mem } from "./mem.ts"
 import { buildOpcodeTable } from "./opcodes.js";
 
+import type { Byte, Word, R8, R16, Flag } from './types.ts'
+
 export class CPU {
-  constructor(mem) {
+  private readonly r;
+  private readonly sp;
+  private readonly pc;
+
+  constructor(mem: Mem) {
     // Initialize 8-bit registers
     this.r = {
       'a': 0x00,

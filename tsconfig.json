@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2022", // Modern JavaScript output
+    "module": "esnext", // Native ESM style modules
+    "rootDir": "src", // Your source code folder
+    "outDir": "dist", // Output location if you ever compile
+    "allowJs": true, // Allow importing and checking .js files
+    "checkJs": true, // Actually typecheck those .js files
+    "strict": false, // Start easy; flip later
+    "moduleResolution": "bundler", // Good default for Bun or Node ESM
+    "esModuleInterop": true, // Fixes common interop issues
+    "skipLibCheck": true, // Speeds up compile by skipping external type packages
+    "resolveJsonModule": true, // Lets you import .json files
+    "allowImportingTsExtensions": true // Allow importing .ts files
+  }
+}
