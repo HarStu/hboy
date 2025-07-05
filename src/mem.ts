@@ -54,8 +54,8 @@ export class Mem {
     }
     for (let i of [0x4, 0x5, 0x6, 0x7]) {
       this.readDispatch[i] = (addr: number) => {
-        const romBank = this.romBanks[this.crb]
-        if (!romBank) throw new Error(`Attempt to read from undefined rombank ${this.crb}`)
+        const romBank = this.romBanks[this.crb];
+        if (!romBank) throw new Error(`Attempt to read from undefined rombank ${this.crb}`);
         return romBank[addr - 0x4000];
       }
     }
@@ -101,10 +101,17 @@ export class Mem {
 
     // Setup writeDispatch table
     for (let i of [0x0, 0x1, 0x2, 0x3]) {
-      this.writeDispatch[i] = (addr: number, val: number) => this.romBanks[0][addr] = val;
+      this.writeDispatch[i] = (addr: number, val: number) => {
+        if (!this.romBanks[0]) throw new Error(`Attempt to write to undefined fixed rombank`);
+        this.romBanks[0][addr] = val;
+      }
     }
     for (let i of [0x4, 0x5, 0x6, 0x7]) {
-      this.writeDispatch[i] = (addr: number, val: number) => this.romBanks[this.crb][addr - 0x4000] = val;
+      this.writeDispatch[i] = (addr: number, val: number) => {
+        const romBank = this.romBanks[this.crb]
+        if (!romBank) throw new Error(`Attempt to write to undefined rombank ${this.crb}`)
+        romBank[addr - 0x4000] = val;
+      }
     }
     for (let i of [0x8, 0x9]) {
       // might have to redo to avoid crash where cerb = -1 (no current external ram bank)
@@ -112,7 +119,11 @@ export class Mem {
     }
     for (let i of [0xA, 0xB]) {
       // Will need to be updated for GBC support -- back half of this is switchable on the GBC
-      this.writeDispatch[i] = (addr: number, val: number) => this.eramBanks[this.cerb][addr - 0xA000] = val;
+      this.writeDispatch[i] = (addr: number, val: number) => {
+        const eramBank = this.eramBanks[this.cerb]
+        if (!eramBank) throw new Error(`Attempt to write to undefined erambank ${this.cerb}`)
+        return eramBank[addr - 0xA000]
+      }
     }
     for (let i of [0xC, 0xD]) {
       // echo ram, this is very busted and shouldn't be touched
@@ -145,11 +156,13 @@ export class Mem {
 
   readByte(addr: number) {
     const region = addr >> 12;
+    if (!this.readDispatch[region]) throw new Error(`Error: attempt to read byte from undefined region of dispatch table ${region}`)
     return this.readDispatch[region](addr);
   }
 
   writeByte(addr: number, val: number) {
     const region = addr >> 12;
+    if (!this.writeDispatch[region]) throw new Error(`Error: attempt to write byte to undefined region of dispatch table ${region}`)
     return this.writeDispatch[region](addr, val);
   }
 }
