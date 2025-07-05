@@ -10,6 +10,7 @@
     "moduleResolution": "bundler", // Good default for Bun or Node ESM
     "esModuleInterop": true, // Fixes common interop issues
     "skipLibCheck": true, // Speeds up compile by skipping external type packages
-    "resolveJsonModule": true // Lets you import .json files
+    "resolveJsonModule": true, // Lets you import .json files
+    "allowImportingTsExtensions": true // Allow importing .ts files
   }
 }
