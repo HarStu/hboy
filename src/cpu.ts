@@ -8,8 +8,11 @@ import type { Byte, Word, R8, R16, Flag } from './types.ts'
 
 export class CPU {
   private readonly r;
-  private readonly sp;
-  private readonly pc;
+  private sp;
+  private pc;
+  private readonly flags;
+  private readonly mem;
+  private readonly opcodes;
 
   constructor(mem: Mem) {
     // Initialize 8-bit registers
@@ -88,7 +91,7 @@ export class CPU {
   }
 
   // Get the value of 'reg'
-  getr(reg, fok) {
+  getr(reg, fok = false) {
     if (reg in this.r && (reg != 'f' || fok)) {
       return this.r[reg];
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
