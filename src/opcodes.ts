@@ -1,6 +1,7 @@
+import type { OpcodeTable } from './types.ts'
 
-export function buildOpcodeTable(cpu) {
-  return {
+export function buildOpcodeTable(cpu): OpcodeTable {
+  const opTable: OpcodeTable = {
     0x00: () => cpu.nop(),
     0x01: () => cpu.ld_r16_imm16('bc'),
     0x02: () => cpu.ld_r16ptr_r8('bc', 'a'),
@@ -258,4 +259,5 @@ export function buildOpcodeTable(cpu) {
     0xFE: () => cpu.unimp(),
     0xFF: () => cpu.unimp(),
   }
+  return opTable
 }

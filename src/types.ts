@@ -13,3 +13,7 @@ export type Reg = R8 | R16;
 
 // Flags 
 export type Flag = 'z' | 'n' | 'h' | 'c';
+
+// Opcode related types
+export type OpcodeHandler = () => number;
+export type OpcodeTable = Record<Byte, OpcodeHandler>
