@@ -2,10 +2,13 @@
  * Models the GameBoy as a whole from its constituent parts
  */
 
-import { Mem } from './mem.js';
-import { CPU } from './cpu.js';
+import { Mem } from './mem.ts';
+import { CPU } from './cpu.ts';
 
 export class GB {
+  private readonly mem: Mem;
+  private readonly cpu: CPU;
+
   constructor() {
     // TODO -- load ROM
     // pass as an argument to mem
