@@ -4,14 +4,14 @@
 import { Mem } from "./mem.ts"
 import { buildOpcodeTable } from "./opcodes.js";
 
-import type { Byte, Word, R8, R16, Flag } from './types.ts'
+import type { Byte, Word, Reg, R8, R16, Flag } from './types.ts'
 
 export class CPU {
-  private readonly r;
-  private sp;
-  private pc;
-  private readonly flags;
-  private readonly mem;
+  private readonly r: Record<R8, Byte>;
+  private sp: Word;
+  private pc: Word;
+  private readonly flags: Record<Flag, boolean>;
+  private readonly mem: Mem;
   private readonly opcodes;
 
   constructor(mem: Mem) {
@@ -50,7 +50,7 @@ export class CPU {
   }
 
   // Set the value of register 'reg' to 'val'
-  setr(reg, val, fok = false) {
+  setr(reg: Reg, val: Byte | Word, fok: boolean = false): void {
     // Todo -- maybe apply a warning here where there's an attempt to store values greater
     // than 8/16 bits?
 
@@ -81,7 +81,7 @@ export class CPU {
   }
 
   // refresh flags based on the current state of f
-  refreshf() {
+  refreshf(): void {
     this.flags.z = Boolean(this.r.f & 0b10000000);
     this.flags.n = Boolean(this.r.f & 0b01000000);
     this.flags.h = Boolean(this.r.f & 0b00100000);
@@ -91,7 +91,7 @@ export class CPU {
   }
 
   // Get the value of 'reg'
-  getr(reg, fok = false) {
+  getr(reg: Reg, fok: boolean = false): Byte | Word {
     if (reg in this.r && (reg != 'f' || fok)) {
       return this.r[reg];
     } else if (['bc', 'de', 'hl', 'af'].includes(reg)) {
@@ -107,21 +107,22 @@ export class CPU {
       }
     } else if (['sp', 'pc'].includes(reg)) {
       return this[reg];
-    } else {
-      console.log(`Error in CPU.getr: invalid register ${reg}`);
-      return null;
+    } else if (!fok && reg === 'f') {
+      throw new Error('attempt to get f directly')
     }
   }
 
   // fetch, decode, and execute a single instruction
-  fde() {
+  fde(): void {
     const op = this.mem.readByte(this.pc);
     this.inc_pc(1);
     this.opcodes[op]();
   }
 
   // fde with some extra commentary
-  test_fde(verbose, final_pc) {
+  // returns a number because it could be a byte (standard opcode)
+  // or a word (CB opcode) (NOT YET IMPLEMENTED)
+  test_fde(verbose: boolean, final_pc: Word): number {
     verbose && console.log(`fetching instruction at: ${this.pc}`)
 
     const op = this.mem.readByte(this.pc);
@@ -143,7 +144,7 @@ export class CPU {
   }
 
   // Set specific flag
-  setf(flag, val) {
+  setf(flag: Flag, val: boolean): Byte {
     // check that parameters are valid and update appropriate flag
     if (['z', 'n', 'h', 'c'].includes(flag) && typeof val === "boolean") {
       if (flag == 'z') {
@@ -184,36 +185,37 @@ export class CPU {
   }
 
   // Increment the program counter by a number of bytes
-  inc_pc(bytes) {
+  inc_pc(bytes: number): void {
     this.pc = (this.pc + bytes) & 0xFFFF;
   }
 
   // Grab the byte of data immediately following the program counter
-  imm8() {
+  imm8(): Byte {
     const byte = this.mem.readByte(this.getr('pc'));
     this.inc_pc(1);
     return byte;
   }
 
   // Grab the two bytes of data immediately following the program counter (they are little-endian in memory)
-  imm16() {
-    const word = this.mem.readByte(this.getr('pc') + 1) << 8 | this.mem.readByte(this.getr('pc'));
+  imm16(): Word {
+    const pc = this.getr('pc')
+    const word = this.mem.readByte(pc + 1) << 8 | this.mem.readByte(pc);
     this.inc_pc(2);
     return word;
   }
 
   // Helper function to make addition arith8 call more immediately readable without repeating code
-  add8(a, b, use_cin = false, up_c = true) {
+  add8(a, b, use_cin = false, up_c = true): Byte {
     return this.arith8(a, b, false, use_cin, up_c)
   }
 
   // Helper function to make subtraction arith8 call more immediately readable without repeating code
-  sub8(a, b, use_cin = false, up_c = true) {
+  sub8(a, b, use_cin = false, up_c = true): Byte {
     return this.arith8(a, b, true, use_cin, up_c)
   }
 
   // Add (or subtract) 8-bit values against each other
-  arith8(a, b, sub = false, use_cin = false, up_c = true) {
+  arith8(a, b, sub = false, use_cin = false, up_c = true): Byte {
     let raw_result = 0;
     // value of carry flag when the execution begins
     const cin = this.flags.c ? 1 : 0
@@ -268,7 +270,7 @@ export class CPU {
   }
 
   // Add a signed 8-bit value to a 16-bit value
-  add16_signed8(a16, b8) {
+  add16_signed8(a16, b8): Word {
     // here, b8 is interpreted as SIGNED
     // adding an 8-bit value to a 16-bit value doesn't naturally wrap
     // after clamping the way adding two values of the same size do
@@ -316,7 +318,8 @@ export class CPU {
   // ----------------
   // All instructions return the duration in machine cycles
 
-  unimp(info = undefined) {
+  // placeholder for non-implemented instruction
+  unimp(info = undefined): number {
     if (info) {
       console.log(info)
     }
@@ -324,7 +327,7 @@ export class CPU {
   }
 
   // Nop
-  nop() {
+  nop(): number {
     return 1;
   }
 
@@ -332,74 +335,74 @@ export class CPU {
   // 8-BIT LOAD INSTRUCTIONS
   // -----------------------
   // Load TO r8_1 FROM r8_2
-  ld_r8_r8(r8_1, r8_2) {
+  ld_r8_r8(r8_1, r8_2): number {
     this.setr(r8_1, this.getr(r8_2));
     return 1;
   }
 
   // Load TO r8 FROM immediate byte
-  ld_r8_imm8(r8) {
+  ld_r8_imm8(r8): number {
     this.setr(r8, this.imm8());
     return 2;
   }
 
   // Load TO r8 FROM data at absolute address specified by r16
-  ld_r8_r16ptr(r8, r16ptr) {
+  ld_r8_r16ptr(r8, r16ptr): number {
     this.setr(r8, this.mem.readByte(this.getr(r16ptr)));
     return 2;
   }
 
   // Load TO data at absolute address specified by r16 FROM r8
-  ld_r16ptr_r8(r16ptr, r8) {
+  ld_r16ptr_r8(r16ptr, r8): number {
     this.mem.writeByte(this.getr(r16ptr), this.getr(r8));
     return 2;
   }
 
   // Load TO data at absolute address specified by r16ptr FROM immediate byte
-  ld_r16ptr_imm8(r16ptr) {
+  ld_r16ptr_imm8(r16ptr): number {
     this.mem.writeByte(this.getr(r16ptr), this.imm8());
     return 3;
   }
 
   // Load TO a FROM data at absolute address specified by immediate two bytes
-  ld_a_imm16ptr() {
+  ld_a_imm16ptr(): number {
     this.setr('a', this.mem.readByte(this.imm16()));
     return 4;
   }
 
   // Load TO data at absolute address specified by immediate two bytes FROM r8
-  ld_imm16ptr_r8(r8) {
+  ld_imm16ptr_r8(r8): number {
     this.mem.writeByte(this.imm16(), this.getr(r8));
     return 4;
   }
 
   // Load TO a FROM data at absolute address specified by register C + 0xFF00
-  ld_a_ffcptr() {
+  ld_a_ffcptr(): number {
     this.setr('a', this.mem.readByte(this.getr('c') + 0xFF00));
     return 2;
   }
 
   // Load TO data at absolute address specified by register C + 0xFF00 FROM a
-  ld_ffcptr_a() {
+  ld_ffcptr_a(): number {
     this.mem.writeByte(this.getr('c') + 0xFF00, this.getr('a'));
     return 2;
   }
 
   // Load TO a FROM data at absolute address specified by immediate byte + 0xFF00
-  ld_a_ffimm8ptr() {
+  ld_a_ffimm8ptr(): number {
     this.setr('a', this.mem.readByte(this.imm8() + 0xFF00));
     return 3;
   }
 
   // Load TO data at absolute address specified by immediate byte + 0xFF00 FROM a
-  ld_ffimm8ptr_a() {
+  ld_ffimm8ptr_a(): number {
     this.mem.writeByte(this.imm8() + 0xFF00, this.getr('a'));
     return 3;
   }
 
   // Load TO a FROM data at absolute address specified by hl
   // Decrement hl
-  ld_a_hl_dec() {
+  ld_a_hl_dec(): number {
     // current hl as of the time execution of this operation begins
     const cur_hl = this.getr('hl');
     this.setr('a', this.mem.readByte(cur_hl));
@@ -410,7 +413,7 @@ export class CPU {
 
   // Load TO data at absolute address specified by hl FROM a
   // Decrement hl
-  ld_hl_a_dec() {
+  ld_hl_a_dec(): number {
     // current hl as of the time execution of this operation begins
     const cur_hl = this.getr('hl');
     this.mem.writeByte(cur_hl, this.getr('a'));
@@ -421,7 +424,7 @@ export class CPU {
 
   // Load TO a FROM data at absolute address specified by hl
   // Increment hl
-  ld_a_hl_inc() {
+  ld_a_hl_inc(): number {
     // current hl as of the time execution of this operation begins
     const cur_hl = this.getr('hl');
     this.setr('a', this.mem.readByte(cur_hl));
@@ -432,7 +435,7 @@ export class CPU {
 
   // Load TO data at absolute address specified by hl FROM a
   // Increment hl
-  ld_hl_a_inc() {
+  ld_hl_a_inc(): number {
     // current hl as of the time execution of this operation begins
     const cur_hl = this.getr('hl');
     this.mem.writeByte(cur_hl, this.getr('a'));
@@ -445,13 +448,13 @@ export class CPU {
   // 16-BIT LOAD INSTRUCTIONS
   // -----------------------
   // Load TO r16 FROM immediate two bytes
-  ld_r16_imm16(r16) {
+  ld_r16_imm16(r16): number {
     this.setr(r16, this.imm16());
     return 3;
   }
 
   // Load TO the data at absolute address specified by immediate two bytes FROM sp
-  ld_imm16ptr_sp() {
+  ld_imm16ptr_sp(): number {
     const sp = this.getr('sp');
     const msb = (sp & 0xFF00) >> 8; // s
     const lsb = (sp & 0x00FF) // p
@@ -462,13 +465,13 @@ export class CPU {
   }
 
   // Load TO sp FROM hl
-  ld_sp_hl() {
+  ld_sp_hl(): number {
     this.setr('sp', this.getr('hl'));
     return 2;
   }
 
   // Push TO stack memory FROM r16
-  push_r16(r16) {
+  push_r16(r16): number {
     // current sp as of the time execution of this operation begins
     const cur_sp = this.sp;
     // words in memory are stored little-endian; the least significant byte is first
@@ -489,19 +492,15 @@ export class CPU {
   }
 
   // Pop TO r16 FROM stack memory
-  pop_r16(r16) {
+  pop_r16(r16): number {
     // current sp as of the time execution of this operation begins
     const cur_sp = this.sp;
 
     // words in memory are stored little-endian; the least significant byte is first
     // registers are big-endian; the most significant byte is first
     // so we grab each of the bytes from memory, build a word with the mem
-
-    console.log(`\nloading value at stack pointer to hl`)
-
     const mem_lsb = this.mem.readByte(cur_sp)
     const mem_msb = this.mem.readByte((cur_sp + 1) & 0xFFFF)
-    console.log(`sp: ${this.sp} lsb: ${mem_lsb}, msb: ${mem_msb}`)
 
     const word = mem_msb << 8 | mem_lsb
     this.setr(r16, word)
@@ -514,7 +513,7 @@ export class CPU {
   }
 
   // Load TO hl FROM adjusted sp
-  ld_hl_sp_plus_e() {
+  ld_hl_sp_plus_e(): number {
     // 'adjusted sp' refers to sp plus signed imm8
     const adj_sp = this.add16_signed8(this.getr('sp'), this.imm8());
     this.setr('hl', adj_sp);
@@ -525,84 +524,84 @@ export class CPU {
   // 8-BIT ARITHMETIC INSTRUCTIONS
   // -----------------------------
   // Load TO a FROM a + r8
-  add_a_r8(r8) {
+  add_a_r8(r8): number {
     const res = this.add8(this.getr('a'), this.getr(r8))
     this.setr('a', res);
     return 1;
   }
 
   // Load TO a FROM a + data at absolute address specified by hl 
-  add_a_hlptr() {
+  add_a_hlptr(): number {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a + immediate byte
-  add_a_imm8() {
+  add_a_imm8(): number {
     const res = this.add8(this.getr('a'), this.imm8());
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a + r8 + carry flag 
-  adc_a_r8(r8) {
+  adc_a_r8(r8): number {
     const res = this.add8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
     return 1
   }
 
   // Load TO a FROM a + data at absolute address specific by hl + carry flag
-  adc_a_hlptr() {
+  adc_a_hlptr(): number {
     const res = this.add8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a + immediate byte + carry flag
-  adc_a_imm8() {
+  adc_a_imm8(): number {
     const res = this.add8(this.getr('a'), this.imm8(), true);
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a - r8
-  sub_a_r8(r8) {
+  sub_a_r8(r8): number {
     const res = this.sub8(this.getr('a'), this.getr(r8));
     this.setr('a', res);
     return 1;
   }
 
   // Load TO a FROM a - data at absolute address specified by hl 
-  sub_a_hlptr() {
+  sub_a_hlptr(): number {
     const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a - immediate byte
-  sub_a_imm8() {
+  sub_a_imm8(): number {
     const res = this.sub8(this.getr('a'), this.imm8());
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a - r8 - carry flag
-  sbc_a_r8(r8) {
+  sbc_a_r8(r8): number {
     const res = this.sub8(this.getr('a'), this.getr(r8), true);
     this.setr('a', res);
     return 1;
   }
 
   // Load TO a FROM a - data at absolute address specified by hl - carry flag
-  sbc_a_hlptr() {
+  sbc_a_hlptr(): number {
     const res = this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')), true);
     this.setr('a', res);
     return 2;
   }
 
   // Load TO a FROM a - immediate byte - carry flag
-  sbc_a_imm8() {
+  sbc_a_imm8(): number {
     const res = this.sub8(this.getr('a'), this.imm8(), true);
     this.setr('a', res);
     return 2;
@@ -610,48 +609,48 @@ export class CPU {
 
   // Compare a WITH r8
   // updates flags like sub_a_r8, but discards the result
-  cp_a_r8(r8) {
+  cp_a_r8(r8): number {
     this.sub8(this.getr('a'), this.getr(r8));
     return 1;
   }
 
   // Compare a WITH data at absolute address specified by hl
   // updates flags like sub_a_hlptr, but discards the result
-  cp_a_hlptr() {
+  cp_a_hlptr(): number {
     this.sub8(this.getr('a'), this.mem.readByte(this.getr('hl')));
     return 2;
   }
 
   // Compare a WITH immediate byte
   // updates flags like sub_a_imm8, but discards the result
-  cp_a_imm8() {
+  cp_a_imm8(): number {
     this.sub8(this.getr('a'), this.imm8());
     return 2;
   }
 
   // Increment r8
-  inc_r8(r8) {
+  inc_r8(r8): number {
     const res = this.add8(this.getr(r8), 1, false, false);
     this.setr(r8, res);
     return 1;
   }
 
   // Increment data at absolute address specified by hl
-  inc_hlptr() {
+  inc_hlptr(): number {
     const res = this.add8(this.mem.readByte(this.getr('hl')), 1, false, false);
     this.mem.writeByte(this.getr('hl'), res);
     return 3;
   }
 
   // Decrement r8
-  dec_r8(r8) {
+  dec_r8(r8): number {
     const res = this.sub8(this.getr(r8), 1, false, false);
     this.setr(r8, res);
     return 1;
   }
 
   // Decrement data at absolute address specified by hl
-  dec_hlptr() {
+  dec_hlptr(): number {
     const res = this.sub8(this.mem.readByte(this.getr('hl')), 1, false, false);
     this.mem.writeByte(this.getr('hl'), res);
     return 3;
