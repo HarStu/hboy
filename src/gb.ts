@@ -6,8 +6,8 @@ import { Mem } from './mem.ts';
 import { CPU } from './cpu.ts';
 
 export class GB {
-  private readonly mem: Mem;
-  private readonly cpu: CPU;
+  readonly mem: Mem;
+  readonly cpu: CPU;
 
   constructor() {
     // TODO -- load ROM

@@ -1,7 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { GB } from './gb.js'
+import { GB } from './gb.ts'
+import type { Reg } from './types.ts'
+
+const registers: Reg[] = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp']
 
 async function fullTestSuite() {
   const __filename = fileURLToPath(import.meta.url)
@@ -13,6 +16,7 @@ async function fullTestSuite() {
   let passCount = 0
   let failCount = 0
   let unimpCount = 0
+
 
   for (const test_file of test_files) {
     if (!test_file.endsWith('.json')) {
@@ -29,7 +33,7 @@ async function fullTestSuite() {
         // setup ram from intial test values
         test.initial.ram.forEach(([addr, val]) => gb.mem.writeByte(addr, val));
         // setup registers from initial test values
-        ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => gb.cpu.setr(r, test.initial[r], true));
+        registers.forEach(r => gb.cpu.setr(r, test.initial[r], true));
 
         // To accomodate tests starting from post-fetch mid-fde state, back up pc by one byte
         gb.cpu.setr('pc', (test.initial['pc'] - 1) & 0xFFFF)
@@ -54,7 +58,7 @@ async function fullTestSuite() {
           unimpCount++
         } else {
           // check if registers match
-          const regCheck = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => {
+          const regCheck = registers.every(r => {
             // console.log(`for reg ${r}:\n\tgb:   ${gb.cpu.getr(r, true)}\n\ttest: ${test.final[r]}`)
             gb.cpu.getr(r, true) !== test.final[r] && badReg.push([r, gb.cpu.getr(r, true), test.final[r]])
             return gb.cpu.getr(r, true) === test.final[r]
@@ -89,7 +93,7 @@ async function oneTest() {
   // setup ram from intial test values
   test.initial.ram.forEach(([addr, val]) => gb.mem.writeByte(addr, val));
   // setup registers from initial test values
-  ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].forEach(r => gb.cpu.setr(r, test.initial[r], true));
+  registers.forEach(r => gb.cpu.setr(r, test.initial[r], true));
 
   // To accomodate tests starting from post-fetch mid-fde state, back up pc by one byte
   gb.cpu.setr('pc', (test.initial['pc'] - 1) & 0xFFFF)
@@ -111,7 +115,7 @@ async function oneTest() {
     console.log("Unimplemented Instruction!")
   } else {
     // check if registers match
-    const regCheck = ['a', 'b', 'c', 'd', 'e', 'f', 'h', 'l', 'pc', 'sp'].every(r => {
+    const regCheck = registers.every(r => {
       // console.log(`for reg ${r}:\n\tgb:   ${gb.cpu.getr(r, true)}\n\ttest: ${test.final[r]}`)
       gb.cpu.getr(r, true) !== test.final[r] && badReg.push([r, gb.cpu.getr(r, true), test.final[r]])
       return gb.cpu.getr(r, true) === test.final[r]
